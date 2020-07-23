@@ -1,1 +1,1 @@
-from sequence_parser import *
+import sequence_parser as sequence_parser
