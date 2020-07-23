@@ -100,6 +100,6 @@ seq.load_setting(setting)
 ```
 
 ## To Do
-- Add phase-locking system between different ports (ex. cross resonance port and target qubit port)
+- Add reference phase-locking system between different ports (ex. cross resonance port and target qubit port)
 - Add sweep variable feature
 - Bug fix when load sequence setting including "FlatTop", "Deriviative", "Union", and "Adjoint"
