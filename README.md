@@ -6,9 +6,9 @@ Parser for pulse sequence declared as  the Classes
 1. Declares the Instructions used for the Sequence
 ```python
 import numpy as np
-from sequence import Sequence
-from port import Port
-from instruction import *
+from sequence_parser.sequence import Sequence
+from sequence_parser.port import Port
+from sequence_parser.instruction import *
 
 # Declare ports
 port1 = Port(name="port1")
