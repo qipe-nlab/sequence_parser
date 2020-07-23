@@ -1,7 +1,9 @@
 # sequence_parser
 Parser for pulse sequence declared as  the Classes
 
-# Usage
+## Usage
+
+1. Declares the Instructions used for the Sequence
 ```python
 import numpy as np
 from sequence import Sequence
@@ -29,7 +31,10 @@ delay = Delay(100)
 # Demodulation windows
 acquire1 = Acquire(duration=300)
 acquire2 = Acquire(duration=350)
+```
 
+2. Declares Sequence and adds Instructions into the Sequence
+```python
 # Declare sub sequence
 sub = Sequence()
 sub.add(delay, port3)
@@ -68,14 +73,27 @@ seq.add(fix_freq, port3)
 seq.trigger([port1, port2, port3, port4])
 seq.add(acquire1, port2)
 seq.add(acquire2, port4)
+```
 
+3. Compile Sequence and get waveform
+```python
 # seqence must be compiled before get waveform
 seq.compile()
 
 # waveform can be plotted
 seq.plot_waveform()
+```
 
+4. I/O with the Measurement tools
+```python
 # get waveform information
 waveform_info = seq.get_waveform_information()
+
+# dump sequence to the dictionary
+setting = seq.dump_setting()
+
+# load setting
+seq = Sequence()
+seq.load_setting(setting)
 ```
 
