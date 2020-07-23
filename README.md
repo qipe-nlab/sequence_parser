@@ -84,6 +84,8 @@ seq.compile()
 seq.plot_waveform()
 ```
 
+![Pulse sequence](/figures/pulse_sequence.png) 
+
 4. I/O with the Measurement tools
 ```python
 # get waveform information
