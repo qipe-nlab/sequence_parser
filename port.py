@@ -33,7 +33,7 @@ class Port:
         self.waveform = None
 
     def _execute_reset(self):
-        """Initialize several elements overwrited by the execute function
+        """Initialize several elements overwritten by the execute function
         """
         self.position = 0
         self.phase = 0
