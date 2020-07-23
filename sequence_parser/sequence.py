@@ -1,8 +1,8 @@
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
-from instruction.trigger import Trigger
-from util.topological_sort import weighted_topological_sort
+from .instruction.trigger import Trigger
+from .util.topological_sort import weighted_topological_sort
 
 plt.rcParams['ytick.minor.visible'] = False
 plt.rcParams['xtick.top']           = True
