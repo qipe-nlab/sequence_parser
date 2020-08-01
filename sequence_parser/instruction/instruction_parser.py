@@ -1,24 +1,30 @@
-from .__init__ import instruction_dict
+import copy
+from .pulse import *
+from .command import *
+from .acquire import *
+from .trigger import *
 
-def generate_setting_from_instruction(instruction):
+def parse(obj):
+    obj = copy.deepcopy(obj)
     setting = {
-        "type" : instruction.type,
-        "name" : instruction.name,
-        "input_params" : instruction.input_params
+        "name" : obj.__class__.__name__,
+        "params" : None,
+        "insts" : {}
     }
+    for key, inst in obj.insts.items():
+        setting["insts"][key] = parse(inst)
+    
+    setting["params"] = obj.params
     return setting
 
-def generate_instruction_from_setting(setting):
-    inst_name = setting["name"]
-    input_params = setting["input_params"]
-    # if inst_name in ["FlatTop", "Deriviative"]:
-    #     compiled_input_params = generate_instruction_from_setting(input_params["pulse_setting"])
-    #     input_params["pulse_setting"] = compiled_input_params
-    # elif inst_name in ["Union", "Adjoint"]:
-    #     compiled_input_params = []
-    #     for pulse_setting in input_params["pulse_setting_list"]:
-    #         compiled_input_params.append(generate_instruction_from_setting(pulse_setting))
-    #     input_params["pulse_setting_list"] = compiled_input_params
-    Instruction = instruction_dict[inst_name]
-    instruction = Instruction(**input_params)
-    return instruction
+def compose(setting):
+    inputs = setting["params"]
+    
+    if len(setting["insts"]) == 1:
+        inputs["pulse"] = compose(setting["insts"][0])
+        
+    elif len(setting["insts"]) > 1:
+        inputs["pulse_list"] = [compose(sub_setting) for sub_setting in setting["insts"].values()]
+                
+    obj = globals()[setting["name"]](**inputs)
+    return obj

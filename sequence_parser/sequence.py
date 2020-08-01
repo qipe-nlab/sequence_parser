@@ -1,6 +1,8 @@
 import copy
 import numpy as np
 import matplotlib.pyplot as plt
+from .port import Port
+from .instruction.instruction import Instruction
 from .instruction.trigger import Trigger
 from .util.topological_sort import weighted_topological_sort
 
@@ -30,8 +32,8 @@ class Sequence:
         lineB = 70
         lineC = 40
         lineD = 20
-        lineE = lineB + lineC - lineD - 4
-        print_str = f"Sequence Instruction List\n"
+        print_str = f"Sequence Instruction List".center(lineA + lineB + lineC + 4) + "\n"
+        print_str += "-"*(lineA + lineB + lineC + 4) + "\n"
         print_str += "  ID".ljust(lineA) + "|".center(4)
         print_str += "Instruction Name".ljust(lineB) + "|".center(4)
         print_str += "Target Port".ljust(lineC)
@@ -39,31 +41,27 @@ class Sequence:
         for index, (instruction, port) in enumerate(self.instruction_list):
             print_str += "-"*(lineA + lineB + lineC + 4) + "\n"
             print_str += f"  {index}".ljust(lineA) + "|".center(4)
-            print_str += f"{instruction.name}".ljust(lineB) + "|".center(4)
+            print_str += f"{instruction.__class__.__name__}".ljust(lineB) + "|".center(4)
             print_str += f"{port}".ljust(lineC)
             print_str += "\n"
-            print_str += "-"*(lineA + lineB + lineC + 4) + "\n"
-            for key, value in instruction.input_params.items():
-                    print_str += "".ljust(lineA) + "|".center(4)
-                    print_str += f"     {key}".ljust(lineD)
-                    print_str += ":".center(4)
-                    print_str += f"{value}"[:lineE].ljust(lineE)
-                    print_str += "\n"
-        print_str += "-"*(lineA + lineB + lineC + 4) + "\n"
         return print_str
+
+    def __str__(self):
+        return self.__repr__()
 
     def _reset(self):
         self.port_list = []
         self.instruction_list = []
-        self.trigger_index = 0
-        self.trigger_position_list = None
-        self.max_waveform_lenght = None
+        self.variable_dict = {}
 
     def _verify_port(self, port):
-        """Add new Port into the port_list
+        """Verify new port
         Args:
             port (Port): control port for qubit drive, cavity drive, cross resonance, or impa pump
         """
+        if not isinstance(port, Port):
+            raise Exception(f"{port} is not Port object")
+
         for tmp in self.port_list:
             if port.name == tmp.name:
                 return tmp
@@ -72,6 +70,21 @@ class Sequence:
         self.port_list.append(new_port)
         return new_port
 
+    def _verify_instruction(self, instruction):
+        """Verify new instruction
+        Args:
+            instruction (Instruction): Pulse, Command, or Trigger
+        """
+        if not isinstance(instruction, Instruction):
+            raise Exception(f"{instruction} is not Instruction object")
+        instruction = copy.deepcopy(instruction)
+        instruction._get_variable()
+        for variable in instruction.variables:
+            if variable.name not in self.variable_dict.keys():
+                self.variable_dict[variable.name] = []
+            self.variable_dict[variable.name].append(variable)
+        return instruction
+
     def add(self, instruction, port):
         """Add Instruction into the instruction_list
         Args:
@@ -79,7 +92,8 @@ class Sequence:
             port (Port): control port for qubit drive, cavity drive, cross resonance, or impa pump
         """
         port = self._verify_port(port)
-        self.instruction_list.append((copy.deepcopy(instruction), port))
+        instruction = self._verify_instruction(instruction)
+        self.instruction_list.append((instruction, port))
 
     def trigger(self, port_list, align="left"):
         """Add Trigger into the instruction_list
@@ -101,15 +115,37 @@ class Sequence:
         for instruction, port in sequence.instruction_list:
             self.add(instruction, port)
 
+    def update_variables(self, update_command):
+        """update values in variables
+        Args:
+            update_command (dict): {"variable_name" (str) : varaible_index (int)}
+        """
+        for variable_name, index in update_command.items():
+            for variable in self.variable_dict[variable_name]:
+                variable._set_value(index)
+
     def compile(self):
         """Compile the instructions
 
         """
-        ## set trigger index
-        self.instruction_list.insert(0, (Trigger(), self.port_list)) # start trigger (phase zero point)
-        self.instruction_list.append((Trigger(), self.port_list)) # end trigger
-        for instruction, port in self.instruction_list:
-            if instruction.type is "Trigger":
+        ## initialize before compile
+        self.trigger_index = 0
+        self.trigger_position_list = None
+        self.max_waveform_lenght = None
+        self.compiled_instruction_list = []
+        for port in self.port_list:
+            port._reset()
+
+        ## fix variables
+        for instruction, _ in self.instruction_list:
+            instruction._fix_variable()
+
+        ## set trigger index and add Instructions on the Ports
+        self.compiled_instruction_list.append((Trigger(), self.port_list)) # start trigger (phase zero point)
+        self.compiled_instruction_list += self.instruction_list
+        self.compiled_instruction_list.append((Trigger(), self.port_list)) # end trigger
+        for instruction, port in self.compiled_instruction_list:
+            if isinstance(instruction, Trigger):
                 instruction.trigger_index = self.trigger_index
                 self.trigger_index += 1
                 for tmp_port in port:
@@ -211,12 +247,13 @@ class Sequence:
         Returns:
             setting (dict): setting file of the Sequence
         """
-        from instruction.instruction_parser import generate_setting_from_instruction
+        from .instruction.instruction_parser import parse
 
         setting = []
         for instruction, port in self.instruction_list:
-            inst_setting = generate_setting_from_instruction(instruction)
-            if instruction.type == "Trigger":
+            inst_setting = parse(instruction)
+
+            if isinstance(instruction, Trigger):
                 port_setting = [tmp_port.name for tmp_port in port]
             else:
                 port_setting = port.name
@@ -232,18 +269,17 @@ class Sequence:
         """Load settings from Dictionary
         
         """
-        from port import Port
-        from instruction.instruction_parser import generate_instruction_from_setting
+        from .instruction.instruction_parser import compose
 
         self._reset()
         for tmp_setting in setting:
             inst_setting = tmp_setting["instruction"]
             port_setting = tmp_setting["port"]
 
-            instruction = generate_instruction_from_setting(inst_setting)
-            if instruction.type == "Trigger":
-                port = [Port(name=port_name) for port_name in port_setting]
+            instruction = compose(inst_setting)
+            if isinstance(instruction, Trigger):
+                port_list = [Port(name=port_name) for port_name in port_setting]
+                self.trigger(port_list)
             else:
                 port = Port(name=port_setting)
-
-            self.add(instruction, port)
+                self.add(instruction, port)

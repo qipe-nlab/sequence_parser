@@ -1,6 +1,8 @@
 import copy
 import numpy as np
 from .instruction.trigger import Trigger
+from .instruction.acquire import Acquire
+from .instruction.pulse.pulse import Pulse
 from .instruction.command import Delay
 
 class Port:
@@ -56,7 +58,7 @@ class Port:
         self.trigger_node_list = []
         for instruction in self.instruction_list:
             instruction._execute(self)
-            if instruction.type == "Trigger":
+            if isinstance(instruction, Trigger):
                 self.trigger_node_list.append((instruction.trigger_index, self.position))
 
         self.trigger_edge_list = []
@@ -79,17 +81,25 @@ class Port:
         self.syncronized_instruction_list = []
         trigger_edge_list = []
         for instruction in self.instruction_list:
-            if instruction.type == "Trigger":
+            if isinstance(instruction, Trigger):
                 if instruction.trigger_index == 0:
                     last_align = "left"
                 else:
                     delay = edge_delay[instruction.trigger_index]
                     if last_align == "left":
-                        trigger_edge_list = trigger_edge_list + [Delay(delay)]
+                        bdelay = Delay(delay)
+                        bdelay._fix_variable()
+                        trigger_edge_list = trigger_edge_list + [bdelay]
                     elif last_align == "middle":
-                        trigger_edge_list = [Delay(0.5*delay)] + trigger_edge_list + [Delay(0.5*delay)]
+                        fdelay = Delay(0.5*delay)
+                        fdelay._fix_variable()
+                        bdelay = Delay(0.5*delay)
+                        bdelay._fix_variable()
+                        trigger_edge_list = [fdelay] + trigger_edge_list + [bdelay]
                     elif last_align == "right":
-                        trigger_edge_list = [Delay(delay)] + trigger_edge_list
+                        fdelay = Delay(delay)
+                        fdelay._fix_variable()
+                        trigger_edge_list = [fdelay] + trigger_edge_list
                     else:
                         raise KeyError(f"align : {last_align} (trigger {instruction.trigger_index}) is not implemented. please use [left, middle, right].")
                     self.syncronized_instruction_list += trigger_edge_list + [instruction]
@@ -113,9 +123,9 @@ class Port:
         self.waveform = np.zeros(self.time.size, dtype=np.complex128)
         self.measurement_window_list = []
         for instruction in self.syncronized_instruction_list:
-            if instruction.type == "Pulse":
+            if isinstance(instruction, Pulse):
                 instruction._write(self)
-            if instruction.type == "Acquire":
+            if isinstance(instruction, Acquire):
                 self.measurement_window_list.append(instruction.measurement_window)
             else:
                 pass

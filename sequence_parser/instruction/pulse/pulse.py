@@ -10,22 +10,38 @@ def charp(time, envelope, frequency, phase):
 class Pulse(Instruction):
     def __init__(self):
         super().__init__()
-        self.type = "Pulse"
         self.pulse_shape = None
         self.position = None
         self.phase = None
         self.detuning = None
+        self.duration = None
+
+    def _get_duration(self):
+        raise NotImplementedError()
+
+    def _fix_duration(self):
+        for inst in self.insts.values():
+            inst._fix_duration()
+        self._get_duration()
+
+    def _fix_pulseshape(self):
+        for inst in self.insts.values():
+            inst._fix_pulseshape()
+        self.pulse_shape.set_params(self)
 
     def _execute(self, port):
+        self._fix_duration()
         self.position = port.position
         self.phase = port.phase
         self.detuning = port.detuning
         port.position += self.duration
 
     def _write(self, port):
-        pulse_region = abs(port.time - (self.position + 0.5*self.duration)) < 0.5*self.duration
+        self._fix_pulseshape()
+        deposition_time = port.time - (self.position + 0.5*self.duration)
+        pulse_region = abs(deposition_time) < 0.5*self.duration
         charp_time = port.time[pulse_region]
-        charp_envelope = self.pulse_shape.model_func(port.time[pulse_region]  - (self.position + 0.5*self.duration))
+        charp_envelope = self.pulse_shape.model_func(deposition_time[pulse_region])
         charp_frequency = port.SIDEBAND_FREQ + self.detuning
         charp_phase = self.phase
         waveform = charp(charp_time, charp_envelope, charp_frequency, charp_phase)
@@ -38,16 +54,14 @@ class Square(Pulse):
         duration = 100,
     ):
         super().__init__()
-        self.name = "Square"
-        self.duration = duration
-        self.pulse_shape = SquareShape(
-            amplitude = amplitude,
-            duration = duration,
-        )
-        self.input_params = {
+        self.pulse_shape = SquareShape()
+        self.params = {
             "amplitude" : amplitude,
             "duration" : duration
         }
+
+    def _get_duration(self):
+        self.duration = self.tmp_params["duration"]
 
 class Gaussian(Pulse):
     def __init__(
@@ -58,20 +72,16 @@ class Gaussian(Pulse):
         zero_end = False,
     ):
         super().__init__()
-        self.name = "Gaussian"
-        self.duration = duration
-        self.pulse_shape = GaussianShape(
-            amplitude = amplitude,
-            fwhm = fwhm,
-            duration = duration,
-            zero_end = zero_end,
-        )
-        self.input_params = {
+        self.pulse_shape = GaussianShape()
+        self.params = {
             "amplitude" : amplitude,
             "fwhm" : fwhm,
             "duration" : duration,
-            "zero_end" : False
+            "zero_end" : zero_end
         }
+
+    def _get_duration(self):
+        self.duration = self.tmp_params["duration"]
 
 class RaisedCos(Pulse):
     def __init__(
@@ -80,16 +90,14 @@ class RaisedCos(Pulse):
         duration = 100,
     ):
         super().__init__()
-        self.name = "RaisedCos"
-        self.duration = duration
-        self.pulse_shape = RaisedCosShape(
-            amplitude = amplitude,
-            duration = duration
-        )
-        self.input_params = {
+        self.pulse_shape = RaisedCosShape()
+        self.params = {
             "amplitude" : amplitude,
             "duration" : duration
         }
+        
+    def _get_duration(self):
+        self.duration = self.tmp_params["duration"]
 
 # OverRideClass
 
@@ -99,68 +107,51 @@ class Deriviative(Pulse):
         pulse,
     ):
         super().__init__()
-        self.name = "Deriviative"
-        self.pulse = pulse
-        self.duration = pulse.duration
-        self.pulse_shape = DeriviativeShape(
-            pulseshape = self.pulse.pulse_shape
-        )
-        self.input_params = {
-            "pulse" : pulse
-        }
+        self.pulse_shape = DeriviativeShape()
+        self.params = {}
+        self.insts = {0 : pulse}
+
+    def _get_duration(self):
+        self.duration = self.insts[0].duration
 
 class FlatTop(Pulse):
     def __init__(
         self,
         pulse,
         top_duration = 200,
-        edge_duration = 100,
     ):
         super().__init__()
-        self.name = "FlatTop"
-        self.pulse = pulse
-        self.duration = top_duration + edge_duration
-        self.pulse_shape = FlatTopShape(
-            pulseshape = self.pulse.pulse_shape,
-            top_duration = top_duration,
-            edge_duration = edge_duration
-        )
-        self.input_params = {
-            "pulse" : {pulse.name : pulse.input_params},
-            "top_duration" : top_duration,
-            "edge_duration" : edge_duration,
-        }
+        self.pulse_shape = FlatTopShape()
+        self.params = {"top_duration" : top_duration}
+        self.insts = {0 : pulse}
+
+    def _get_duration(self):
+        self.duration = self.tmp_params["top_duration"] + self.insts[0].duration
 
 # UnionClass
 
 class Adjoint(Pulse):
     def __init__(
         self,
-        pulse_list
+        pulse_list,
     ):
         super().__init__()
-        self.name = "Adjoint"
-        self.pulse_list = pulse_list
-        self.duration = sum([pulse.duration for pulse in pulse_list])
-        self.pulse_shape = AdjointShape(
-            pulseshape_list = [pulse.pulse_shape for pulse in pulse_list]
-        )
-        self.input_params = {
-            "pulse_list" : [{pulse.name : pulse.input_params} for pulse in pulse_list]
-        }
+        self.pulse_shape = AdjointShape()
+        self.params = {}
+        self.insts = dict(zip(range(len(pulse_list)), pulse_list))
+
+    def _get_duration(self):
+        self.duration = sum([pulse.duration for pulse in self.insts.values()])
 
 class Union(Pulse):
     def __init__(
         self,
-        pulse_list
+        pulse_list,
     ):
         super().__init__()
-        self.name = "Union"
-        self.pulse_list = pulse_list
-        self.duration = max([pulse.duration for pulse in pulse_list])
-        self.pulse_shape = UnionShape(
-            pulseshape_list = [pulse.pulse_shape for pulse in pulse_list]
-        )
-        self.input_params = {
-            "pulse_list" : [{pulse.name : pulse.input_params} for pulse in pulse_list]
-        }
+        self.pulse_shape = UnionShape()
+        self.params = {}
+        self.insts = dict(zip(range(len(pulse_list)), pulse_list))
+
+    def _get_duration(self):
+        self.duration = max([pulse.duration for pulse in self.insts.values()])

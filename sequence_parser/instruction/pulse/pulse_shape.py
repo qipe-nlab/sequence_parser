@@ -3,38 +3,35 @@ import numpy as np
 
 class PulseShape:
     def __init__(self):
-        self.time = None
-        self.waveform = None
-        self.duration = None
+        pass
+
+    def set_params(self):
+        raise NotImplementedError()
 
     def model_func(self, time):
-        raise
+        raise NotImplementedError()
 
 class SquareShape(PulseShape):
-    def __init__(
-        self,
-        amplitude = 1,
-        duration = 100,
-    ):
-        self.amplitude = amplitude
-        self.duration = duration
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.amplitude = pulse.tmp_params["amplitude"]
+        self.duration = pulse.duration
 
     def model_func(self, time):
         waveform = self.amplitude*np.ones(time.size)
         return waveform
 
 class GaussianShape(PulseShape):
-    def __init__(
-        self,
-        amplitude = 1,
-        fwhm = 30,
-        duration = 100,
-        zero_end = True,
-    ):
-        self.amplitude = amplitude
-        self.fwhm = fwhm
-        self.duration = duration
-        self.zero_end = zero_end
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.amplitude = pulse.tmp_params["amplitude"]
+        self.fwhm = pulse.tmp_params["fwhm"]
+        self.zero_end = pulse.tmp_params["zero_end"]
+        self.duration = pulse.duration
 
     def model_func(self, time):
         waveform = self.amplitude*np.exp(-4*np.log(2)*(time/self.fwhm)**2)
@@ -44,13 +41,12 @@ class GaussianShape(PulseShape):
         return waveform
 
 class RaisedCosShape(PulseShape):
-    def __init__(
-        self,
-        amplitude = 1,
-        duration = 100,
-    ):
-        self.amplitude = amplitude
-        self.duration = duration
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.amplitude = pulse.tmp_params["amplitude"]
+        self.duration = pulse.duration
 
     def model_func(self, time):
         phase = np.pi*time/(0.5*self.duration)
@@ -58,17 +54,12 @@ class RaisedCosShape(PulseShape):
         return waveform
 
 class FlatTopShape(PulseShape):
-    def __init__(
-        self,
-        pulseshape,
-        top_duration = 200,
-        edge_duration = 100,
-    ):
-        self.pulseshape = copy.deepcopy(pulseshape)
-        self.pulseshape.duration = edge_duration
-        self.top_duration = top_duration
-        self.edge_duration = edge_duration
-        self.duration = top_duration + edge_duration
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.pulseshape = copy.deepcopy(pulse.insts[0].pulse_shape)
+        self.top_duration = pulse.tmp_params["top_duration"]
 
     def model_func(self, time):
         ftime = time[np.where(time <= -0.5*self.top_duration)] + 0.5*self.top_duration
@@ -80,24 +71,22 @@ class FlatTopShape(PulseShape):
         return waveform
 
 class DeriviativeShape(PulseShape):
-    def __init__(
-        self,
-        pulseshape,
-    ):
-        self.pulseshape = pulseshape
-        self.duration = pulseshape.duration
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.pulseshape = copy.deepcopy(pulse.insts[0].pulse_shape)
 
     def model_func(self, time):
         waveform = self.pulseshape.model_func(time)
         return np.gradient(waveform)/np.gradient(time)
 
 class UnionShape(PulseShape):
-    def __init__(
-        self,
-        pulseshape_list,
-    ):
-        self.pulseshape_list = pulseshape_list
-        self.duration = max([pulseshape.duration for pulseshape in pulseshape_list])
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.pulseshape_list = copy.deepcopy([pulse.pulse_shape for pulse in pulse.insts.values()])
 
     def model_func(self, time):
         waveform = 0j
@@ -106,12 +95,12 @@ class UnionShape(PulseShape):
         return waveform
 
 class AdjointShape(PulseShape):
-    def __init__(
-        self,
-        pulseshape_list,
-    ):
-        self.pulseshape_list = pulseshape_list
-        self.duration = sum([pulseshape.duration for pulseshape in pulseshape_list])
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.pulseshape_list = copy.deepcopy([pulse.pulse_shape for pulse in pulse.insts.values()])
+        self.duration = pulse.duration
 
     def model_func(self, time):
         cursor = -0.5*self.duration

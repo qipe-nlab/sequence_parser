@@ -4,48 +4,40 @@ from .instruction import Instruction
 class Command(Instruction):
     def __init__(self):
         super().__init__()
-        self.type = "Command"
 
 class Delay(Command):
     def __init__(self, duration):
         super().__init__()
-        self.name = "Delay"
-        self.duration = duration
-        self.input_params = {"duration" : duration}
+        self.params = {"duration" : duration}
 
     def _execute(self, port):
-        port.position += self.duration
+        duration = self.tmp_params["duration"]
+        port.position += duration
 
 class VirtualZ(Command):
     def __init__(self, phase):
         super().__init__()
-        self.name = "VirtualZ"
-        self.duration = 0
-        self.phase = phase
-        self.input_params = {"phase" : phase}
+        self.params = {"phase" : phase}
 
     def _execute(self, port):
-        port.phase -= self.phase
+        phase = self.tmp_params["phase"]
+        port.phase -= phase
 
 class ShiftFrequency(Command):
     def __init__(self, detuning):
         super().__init__()
-        self.name = "ShiftFrequency"
-        self.duration = 0
-        self.detuning = detuning
-        self.input_params = {"detuning" : detuning}
+        self.params = {"detuning" : detuning}
 
     def _execute(self, port):
-        port.detuning = self.detuning
+        detuning = self.tmp_params["detuning"]
+        port.detuning = detuning
 
 class SetAbsolutePhase(Command):
     def __init__(self, phase):
         super().__init__()
-        self.name = "SetAbsolutePhase"
-        self.duration = 0
-        self.phase = phase
-        self.input_params = {"phase" : phase}
+        self.params = {"phase" : phase}
 
     def _execute(self, port):
+        phase = self.tmp_params["phase"]
         charp_frequency = port.SIDEBAND_FREQ
-        port.phase = self.phase - 2*np.pi*charp_frequency*port.position
+        port.phase = phase - 2*np.pi*charp_frequency*port.position
