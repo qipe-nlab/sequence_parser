@@ -11,7 +11,7 @@ from sequence_parser.sequence import Sequence
 from sequence_parser.port import Port
 from sequence_parser.instruction import *
 
-# Declare variables
+# Variables
 amp1 = Variable(name="amplitude1", value_array=np.linspace(0,1,2), unit="")
 amp2 = Variable(name="amplitude2", value_array=np.linspace(0,1,2), unit="")
 amp3 = Variable(name="amplitude3", value_array=np.linspace(0,1,2), unit="")
@@ -20,7 +20,7 @@ var.add([amp1,amp2])
 var.add(amp3)
 var.compile()
 
-# Declare ports
+# Ports
 port1 = Port(name="port1")
 port2 = Port(name="port2")
 port3 = Port(name="port3")
