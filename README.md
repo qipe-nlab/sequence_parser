@@ -110,5 +110,4 @@ new_seq.load_setting(setting)
 ## To Do
 - Add reference phase-locking system between different ports (ex. cross resonance port and target qubit port)
 - Add experiment injection feature to insert recalibration of the IQ projector
-- Add Variable Command feature
 - Add preset gates e.g. RX90, RZX45
