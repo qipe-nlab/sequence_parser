@@ -235,7 +235,7 @@ class Sequence:
         for port in self.port_list:
             waveform_information[port.name] = {
                 "daq_length" : port.position,
-                "measurement_window" : port.measurement_window_list,
+                "measurement_windows" : port.measurement_window_list,
                 "waveform" : port.waveform,
                 "waveform_updated" : False,
             }
