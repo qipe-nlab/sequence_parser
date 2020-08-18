@@ -4,6 +4,7 @@ from .instruction.trigger import Trigger
 from .instruction.acquire import Acquire
 from .instruction.pulse.pulse import Pulse
 from .instruction.command import Delay
+from .instruction.container import Container
 
 class Port:
     """Port management class for timedomain measurement"""
@@ -123,9 +124,9 @@ class Port:
         self.waveform = np.zeros(self.time.size, dtype=np.complex128)
         self.measurement_window_list = []
         for instruction in self.syncronized_instruction_list:
-            if isinstance(instruction, Pulse):
+            if isinstance(instruction, Pulse) or (isinstance(instruction, Container) and isinstance(instruction.inst, Pulse)):
                 instruction._write(self)
-            if isinstance(instruction, Acquire):
+            if isinstance(instruction, Acquire) or (isinstance(instruction, Container) and isinstance(instruction.inst, Acquire)):
                 self.measurement_window_list.append(instruction.measurement_window)
             else:
                 pass
