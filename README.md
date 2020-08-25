@@ -8,7 +8,7 @@ Users can execute the Instructions defined as a class one after another and use 
 Users also can partially customize the rules about time orders for instructions using the "with" grammar in python.
 
 
-Sequence Parser will streamline your experiments by dramatically increasing the reusability of pulse sequences.
+Sequence Parser will streamline experiments by increasing the reusability of pulse sequences.
 
 ## Usage
 
