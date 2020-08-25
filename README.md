@@ -102,6 +102,18 @@ cir.plot_waveform()
 ```python
 # get waveform information
 waveforms = cir.get_waveform_information()
+
+import measurement_tool as mt
+from measurement_tool.sequence.sequence_external import ExternalSequence
+session = mt.Session(
+    labrad_hostname = "host_name",
+    labrad_password = "password",
+    labrad_username = "username",
+    cooling_down_id = "example",
+    experiment_username = "username",
+    package_name = "example",
+)
+control.sequencer = control.seq = ExternalSequence(session)
 control = mt.QubitMeasurement(session)
 control.sequencer.set_waveforms(waveforms)
 dataset = control.take_data("test")
