@@ -1,7 +1,13 @@
 # sequence_parser
 Sequence Parser is a library supporting time-domain experiments.
+
+
 Users can execute the Instructions defined as a class one after another and use Triggers to specify the synchronization relationship between ports.
+
+
 Users also can partially customize the rules about time orders for instructions using the "with" grammar in python.
+
+
 Sequence Parser will streamline your experiments by dramatically increasing the reusability of pulse sequences.
 
 ## Usage
