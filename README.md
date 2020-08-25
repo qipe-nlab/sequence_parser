@@ -1,113 +1,107 @@
 # sequence_parser
-Parser for pulse sequence declared as  the Classes
+Sequence Parser is a library supporting time-domain experiments.
+Users can execute the Instructions defined as a class one after another and use Triggers to specify the synchronization relationship between ports.
+Users also can partially customize the rules about time orders for instructions using the "with" grammar in python.
+Sequence Parser will streamline your experiments by dramatically increasing the reusability of pulse sequences.
 
 ## Usage
 
-1. Declares the Instructions used for the Sequence
+1. Import Modules
 ```python
 import numpy as np
 from sequence_parser.variable import Variable, Variables
 from sequence_parser.sequence import Sequence
 from sequence_parser.port import Port
+from sequence_parser.circuit import Circuit, ControlDict
 from sequence_parser.instruction import *
+```
 
-# Variables
-amp1 = Variable(name="amplitude1", value_array=np.linspace(0,1,2), unit="")
-amp2 = Variable(name="amplitude2", value_array=np.linspace(0,1,2), unit="")
-amp3 = Variable(name="amplitude3", value_array=np.linspace(0,1,2), unit="")
+2. Load Preset Gates (these are processed when creating calibration_note in measurement_tools)
+```python
+q1 = Port(name="q1")
+q2 = Port(name="q2")
+r1 = Port(name="r1")
+r2 = Port(name="r2")
+c12 = Port(name="c12")
+
+cd = ControlDict()
+cd._add_sync(c12, (q1, q2))
+
+for port in [q1, q2]:
+    rx90 = Sequence()
+    with rx90.align(port, mode="left"):
+        rx90.add(Gaussian(amplitude=0.5), port)
+        rx90.add(Deriviative(Gaussian(amplitude=5j)), port)
+    rx90_setting = rx90.dump_setting()
+    cd._add("rx90", port.name, rx90_setting)
+    
+for port in [c12]:
+    rzx45 = Sequence()
+    rzx45.add(FlatTop(RaisedCos(amplitude=0.8, duration=10), top_duration=300), port)
+    rzx45_setting = rzx45.dump_setting()
+    cd._add("rzx45", port.name, rzx45_setting)
+
+for port in [r1, r2]:
+    meas = Sequence()
+    with meas.align(port, mode="left"):
+        meas.add(FlatTop(RaisedCos(amplitude=0.5, duration=10), top_duration=400), port)
+        with meas.align(port, mode="sequencial"):
+            meas.add(Delay(100), port)
+            meas.add(Acquire(duration=300), port)
+    meas_setting = meas.dump_setting()
+    cd._add("meas", port.name, meas_setting)
+```
+
+3. Declare Variables
+```python
+v1 = Variable(name="instruction", value_array=[Gaussian(), RaisedCos()], unit="")
+v2 = Variable(name="phase", value_array=[0, 0.5*np.pi], unit="rad")
+v3 = Variable(name="amplitude", value_array=[0, 0.5, 1.0], unit="")
 var = Variables()
-var.add([amp1,amp2])
-var.add(amp3)
+var.add([v1, v2]) # zip sweep for v1 and v2
+var.add(v3)
 var.compile()
-
-# Ports
-port1 = Port(name="port1")
-port2 = Port(name="port2")
-port3 = Port(name="port3")
-port4 = Port(name="port4")
-
-# Pulses
-truncated_gaussian = Gaussian(zero_end=True)
-square = Square(amplitude=amp1)
-raisedcosflattop = FlatTop(RaisedCos(amplitude=amp2), top_duration=200)
-drag = Union([Gaussian(amplitude=amp3), Deriviative(Gaussian(amplitude=1j))])
-
-# Commands
-vz = VirtualZ(0.5*np.pi)
-shift_freq = ShiftFrequency(0.03) # GHz
-fix_freq = ShiftFrequency(0)
-delay = Delay(100)
-
-# Demodulation windows
-acquire1 = Acquire(duration=300)
-acquire2 = Acquire(duration=350)
 ```
 
-2. Declares Sequence and adds Instructions into the Sequence
+4. Run Circuit
 ```python
-# Declare sub sequence
-sub = Sequence()
-sub.add(delay, port3)
-sub.add(drag, port3)
-sub.add(delay, port3)
-sub.add(drag, port3)
-
-# Declare main sequence
-seq = Sequence()
-seq.trigger([port1, port2], align="right")
-seq.add(acquire1, port1)
-seq.add(acquire2, port3)
-seq.trigger([port1, port2, port3, port4])
-seq.add(truncated_gaussian, port1)
-seq.add(raisedcosflattop, port2)
-seq.trigger([port1, port2, port4])
-seq.add(truncated_gaussian, port1)
-seq.add(shift_freq, port2)
-seq.add(drag, port2)
-seq.add(fix_freq, port2)
-seq.add(vz, port3)
-
-# user can call the sub sequence in the other sequence
-seq.call(sub)
-
-seq.add(truncated_gaussian, port4)
-seq.add(vz, port4)
-seq.add(raisedcosflattop, port4)
-seq.add(vz, port4)
-seq.trigger([port1, port3, port4])
-seq.add(square, port2)
-seq.add(shift_freq, port3)
-seq.add(truncated_gaussian, port2)
-seq.add(raisedcosflattop, port3)
-seq.add(fix_freq, port3)
-seq.trigger([port1, port2, port3, port4])
-seq.add(acquire1, port2)
-seq.add(acquire2, port4)
+cir = Circuit()
+cir._apply(cd)
+cir.rx90(q1)
+cir.trigger([q1, q2, c12, r1, r2])
+cir.rz(0.5*np.pi, q2)
+cir.rzx90(c12)
+cir.trigger([q1, q2, c12, r1, r2])
+cir.rx90(q2)
+cir.add(Container(inst=v1), q2)
+cir.trigger([q1, q2, c12, r1, r2])
+cir.measurement(r1)
+cir.measurement(r2)
 ```
 
-3. Compile Sequence and get waveform
+3. Update Variable and Compile Sequence
 ```python
-# compile sequence and plot waveform while sweeping the variables
 for update_command in var.update_command_list:
-    seq.update_variables(update_command)
-    seq.compile()
-    seq.plot_waveform()
+    cir.update_variables(update_command)
+    cir.compile()
 ```
 
+3. Plot waveforms
+```python
+cir.plot_waveform()
+```
 ![Pulse sequence](/figures/pulse_sequence.png)
 
 4. I/O with the Measurement tools
 ```python
 # get waveform information
-waveform_info = seq.get_waveform_information()
+waveform_information = cir.get_waveform_information()
 
 # dump and load sequence setting
-setting = seq.dump_setting()
-new_seq = Sequence()
-new_seq.load_setting(setting)
+setting = cir.dump_setting()
+new_cir = Circuit()
+new_cir.load_setting(setting)
 ```
 
 ## To Do
-- Add reference phase-locking system between different ports (ex. cross resonance port and target qubit port)
-- Add experiment injection feature to insert recalibration of the IQ projector
-- Add preset gates e.g. RX90, RZX45
+- Add variable Sequence
