@@ -33,6 +33,8 @@ def weighted_topological_sort(node_list, weighted_edge_list):
                 if bnode == next_head_node_list:
                     flag = False
             if flag:
-                head_node_list.append(next_head_node)
+                if next_head_node not in head_node_list:
+                    head_node_list.append(next_head_node)
+        head_node_list.sort(key=sorted_node_list.index)
 
     return node_pos

@@ -12,7 +12,7 @@ class Delay(Command):
 
     def _execute(self, port):
         duration = self.tmp_params["duration"]
-        port.position += duration
+        port._time_step(duration)
 
 class VirtualZ(Command):
     def __init__(self, phase):

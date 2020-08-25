@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from .port import Port
 from .instruction.instruction import Instruction
 from .instruction.trigger import Trigger
+from .instruction.align import _AlignManager
 from .util.topological_sort import weighted_topological_sort
 
 plt.rcParams['ytick.minor.visible'] = False
@@ -31,7 +32,6 @@ class Sequence:
         lineA = 6
         lineB = 70
         lineC = 40
-        lineD = 20
         print_str = f"Sequence Instruction List".center(lineA + lineB + lineC + 4) + "\n"
         print_str += "-"*(lineA + lineB + lineC + 4) + "\n"
         print_str += "  ID".ljust(lineA) + "|".center(4)
@@ -104,8 +104,12 @@ class Sequence:
         port_list = [self._verify_port(port) for port in port_list]
         self.instruction_list.append((Trigger(align=align), port_list))
 
-    # def align(self, port, align):
-    #     return AlignManager(self, port, align)
+    def align(self, port, mode):
+        """Change align mode
+        Args:
+            mode (string): "left" or "sequencial"
+        """
+        return _AlignManager(self, port, mode)
 
     def call(self, sequence):
         """Combine the instruction_list with the other sequence
@@ -202,7 +206,7 @@ class Sequence:
         for i, port in enumerate(plot_port_list):
             plt.subplot(len(plot_port_list), 1, i+1)
             plt.axhline(0, color="black", linestyle="-")
-            for measurement_window in port.measurement_window_list:
+            for measurement_window in port.measurement_windows:
                 plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
             if cancell_sideband:
                 plot_waveform = np.exp(-1j*(2*np.pi*port.SIDEBAND_FREQ*port.time))*port.waveform
@@ -235,7 +239,7 @@ class Sequence:
         for port in self.port_list:
             waveform_information[port.name] = {
                 "daq_length" : port.position,
-                "measurement_windows" : port.measurement_window_list,
+                "measurement_windows" : port.measurement_windows,
                 "waveform" : port.waveform,
                 "waveform_updated" : False,
             }

@@ -4,7 +4,7 @@ from .instruction.trigger import Trigger
 from .instruction.acquire import Acquire
 from .instruction.pulse.pulse import Pulse
 from .instruction.command import Delay
-from .instruction.container import Container
+from .instruction.functional import Container
 
 class Port:
     """Port management class for timedomain measurement"""
@@ -28,12 +28,11 @@ class Port:
         """
         self.instruction_list = []
         self.syncronized_instruction_list = None
-        self.position = 0
-        self.phase = 0
-        self.detuning = 0
         self.DAC_STEP = 0.2 # ns
         self.SIDEBAND_FREQ = 0.25 # GHz
         self.waveform = None
+        self.measurement_windows = []
+        self._execute_reset()
 
     def _execute_reset(self):
         """Initialize several elements overwrited by the execute function
@@ -41,13 +40,28 @@ class Port:
         self.position = 0
         self.phase = 0
         self.detuning = 0
+        self.align_modes = [("sequencial", [])]
 
     def _add(self, instruction):
         """Add Instruction into the instruction_list
         Args:
             instruction (Instruction): Pulse, Command, or Trigger
         """
+        if isinstance(instruction, Container):
+            instruction = instruction.inst
         self.instruction_list.append(instruction)
+
+    def _time_step(self, duration):
+        """Progress position of the Port
+        Args:
+            duration (float): progress time
+
+        """
+        if self.align_modes[-1][0] is "sequencial":
+            self.align_modes[-1][1].append(duration)
+            self.position += duration
+        if self.align_modes[-1][0] is "left":
+            self.align_modes[-1][1].append(duration)
 
     def _get_trigger_edge_list(self):
         """Evaluate the minimum duration between neighbor Triggers
@@ -122,11 +136,10 @@ class Port:
         """
         self.time = np.arange(0, waveform_length, self.DAC_STEP)
         self.waveform = np.zeros(self.time.size, dtype=np.complex128)
-        self.measurement_window_list = []
         for instruction in self.syncronized_instruction_list:
-            if isinstance(instruction, Pulse) or (isinstance(instruction, Container) and isinstance(instruction.inst, Pulse)):
+            if isinstance(instruction, Pulse):
                 instruction._write(self)
-            if isinstance(instruction, Acquire) or (isinstance(instruction, Container) and isinstance(instruction.inst, Acquire)):
-                self.measurement_window_list.append(instruction.measurement_window)
+            if isinstance(instruction, Acquire):
+                instruction._acquire(self)
             else:
                 pass

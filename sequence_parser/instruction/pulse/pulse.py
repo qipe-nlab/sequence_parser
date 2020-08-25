@@ -1,6 +1,6 @@
 import numpy as np
 from ..instruction import Instruction
-from .pulse_shape import SquareShape, GaussianShape, RaisedCosShape, DeriviativeShape, FlatTopShape, UnionShape, AdjointShape
+from .pulse_shape import SquareShape, GaussianShape, RaisedCosShape, DeriviativeShape, FlatTopShape
 
 def charp(time, envelope, frequency, phase):
     phase_factor = np.exp(1j*(2*np.pi*frequency*time + phase))
@@ -34,7 +34,7 @@ class Pulse(Instruction):
         self.position = port.position
         self.phase = port.phase
         self.detuning = port.detuning
-        port.position += self.duration
+        port._time_step(self.duration)
 
     def _write(self, port):
         self._fix_pulseshape()
@@ -99,8 +99,6 @@ class RaisedCos(Pulse):
     def _get_duration(self):
         self.duration = self.tmp_params["duration"]
 
-# OverRideClass
-
 class Deriviative(Pulse):
     def __init__(
         self,
@@ -127,31 +125,3 @@ class FlatTop(Pulse):
 
     def _get_duration(self):
         self.duration = self.tmp_params["top_duration"] + self.insts[0].duration
-
-# UnionClass
-
-class Adjoint(Pulse):
-    def __init__(
-        self,
-        pulse_list,
-    ):
-        super().__init__()
-        self.pulse_shape = AdjointShape()
-        self.params = {}
-        self.insts = dict(zip(range(len(pulse_list)), pulse_list))
-
-    def _get_duration(self):
-        self.duration = sum([pulse.duration for pulse in self.insts.values()])
-
-class Union(Pulse):
-    def __init__(
-        self,
-        pulse_list,
-    ):
-        super().__init__()
-        self.pulse_shape = UnionShape()
-        self.params = {}
-        self.insts = dict(zip(range(len(pulse_list)), pulse_list))
-
-    def _get_duration(self):
-        self.duration = max([pulse.duration for pulse in self.insts.values()])

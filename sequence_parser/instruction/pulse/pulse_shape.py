@@ -80,34 +80,3 @@ class DeriviativeShape(PulseShape):
     def model_func(self, time):
         waveform = self.pulseshape.model_func(time)
         return np.gradient(waveform)/np.gradient(time)
-
-class UnionShape(PulseShape):
-    def __init__(self):
-        super().__init__()
-
-    def set_params(self, pulse):
-        self.pulseshape_list = copy.deepcopy([pulse.pulse_shape for pulse in pulse.insts.values()])
-
-    def model_func(self, time):
-        waveform = 0j
-        for pulseshape in self.pulseshape_list:
-            waveform += pulseshape.model_func(time)
-        return waveform
-
-class AdjointShape(PulseShape):
-    def __init__(self):
-        super().__init__()
-
-    def set_params(self, pulse):
-        self.pulseshape_list = copy.deepcopy([pulse.pulse_shape for pulse in pulse.insts.values()])
-        self.duration = pulse.duration
-
-    def model_func(self, time):
-        cursor = -0.5*self.duration
-        waveform_list = []
-        for pulseshape in self.pulseshape_list:
-            tmp_time = time[np.where((time - cursor >= 0) & (time - cursor <= pulseshape.duration))]
-            waveform_list.append(pulseshape.model_func(tmp_time - cursor - 0.5*pulseshape.duration))
-            cursor += pulseshape.duration
-        waveform = np.hstack(waveform_list)
-        return waveform
