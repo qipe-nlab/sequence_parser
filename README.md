@@ -85,25 +85,30 @@ cir.measurement(r1)
 cir.measurement(r2)
 ```
 
-3. Update Variable and Compile Sequence
+5. Update Variable and Compile Sequence
 ```python
 for update_command in var.update_command_list:
     cir.update_variables(update_command)
     cir.compile()
 ```
 
-3. Plot waveforms
+6. Plot waveforms
 ```python
 cir.plot_waveform()
 ```
 ![Pulse sequence](/figures/circuit.png)
 
-4. I/O with the Measurement tools
+7. Run Circuit with the Measurement tools
 ```python
 # get waveform information
-waveform_information = cir.get_waveform_information()
+waveforms = cir.get_waveform_information()
+control = mt.QubitMeasurement(session)
+control.sequencer.set_waveforms(waveforms)
+dataset = control.take_data("test")
+```
 
-# dump and load sequence setting
+8. Dump and Load Circuit (setting can be saved in the Registry)
+```python
 setting = cir.dump_setting()
 new_cir = Circuit()
 new_cir.load_setting(setting)
