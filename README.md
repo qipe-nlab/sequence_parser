@@ -96,7 +96,7 @@ for update_command in var.update_command_list:
 ```python
 cir.plot_waveform()
 ```
-![Pulse sequence](/figures/pulse_sequence.png)
+![Pulse sequence](/figures/circuit.png)
 
 4. I/O with the Measurement tools
 ```python
