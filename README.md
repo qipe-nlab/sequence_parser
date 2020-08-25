@@ -111,3 +111,4 @@ new_cir.load_setting(setting)
 
 ## To Do
 - Add variable Sequence
+- Add var.dump_setting()
