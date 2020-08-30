@@ -26,31 +26,46 @@ from sequence_parser.instruction import *
 ```python
 q1 = Port(name="q1")
 q2 = Port(name="q2")
+q3 = Port(name="q3")
+q4 = Port(name="q4")
+q5 = Port(name="q5")
+
 r1 = Port(name="r1")
 r2 = Port(name="r2")
-c12 = Port(name="c12")
+r3 = Port(name="r3")
+r4 = Port(name="r4")
+r5 = Port(name="r5")
+
+c21 = Port(name="c21")
+c31 = Port(name="c31")
+c41 = Port(name="c41")
+c51 = Port(name="c51")
 
 cd = ControlDict()
-cd._add_sync(c12, (q1, q2))
+cd._add_sync(c21, (q2, q1))
+cd._add_sync(c31, (q3, q1))
+cd._add_sync(c41, (q4, q1))
+cd._add_sync(c51, (q5, q1))
 
-for port in [q1, q2]:
+for port in [q1,q2,q3,q4,q5]:
     rx90 = Sequence()
     with rx90.align(port, mode="left"):
         rx90.add(Gaussian(amplitude=0.5), port)
-        rx90.add(Deriviative(Gaussian(amplitude=5j)), port)
+        rx90.add(Deriviative(Gaussian(amplitude=2j)), port)
     rx90_setting = rx90.dump_setting()
     cd._add("rx90", port.name, rx90_setting)
     
-for port in [c12]:
+for port in [(q1,c21),(q1,c31),(q1,c41),(q1,c51)]:
     rzx45 = Sequence()
-    rzx45.add(FlatTop(RaisedCos(amplitude=0.8, duration=10), top_duration=300), port)
+    rzx45.add(FlatTop(RaisedCos(amplitude=0.1, duration=10), top_duration=300), port[0])
+    rzx45.add(FlatTop(RaisedCos(amplitude=0.8*np.exp(0.125j*np.pi), duration=10), top_duration=300), port[1])
     rzx45_setting = rzx45.dump_setting()
-    cd._add("rzx45", port.name, rzx45_setting)
+    cd._add("rzx45", port[1].name, rzx45_setting)
 
-for port in [r1, r2]:
+for port in [r1,r2,r3,r4,r5]:
     meas = Sequence()
     with meas.align(port, mode="left"):
-        meas.add(FlatTop(RaisedCos(amplitude=0.5, duration=10), top_duration=400), port)
+        meas.add(FlatTop(RaisedCos(amplitude=0.5, duration=10), top_duration=500), port)
         with meas.align(port, mode="sequencial"):
             meas.add(Delay(100), port)
             meas.add(Acquire(duration=300), port)
@@ -58,7 +73,30 @@ for port in [r1, r2]:
     cd._add("meas", port.name, meas_setting)
 ```
 
-3. Declare Variables
+3. Run Circuit
+```python
+cir = Circuit()
+cir._apply(cd)
+for _ in range(3):
+    cir.trigger([r1, q1,q2,q3,q4,q5], align="middle")
+    cir.measurement(r1)
+    cir.trigger([r1, q1,q2,q3,q4,q5])
+    cir.cnot(c21)
+    cir.cnot(c31)
+    cir.cnot(c41)
+    cir.cnot(c51)
+cir.trigger([r1, q1,q2,q3,q4,q5], align="middle")
+cir.measurement(r1)
+cir.draw()
+```
+
+4. Plot waveforms
+```python
+cir.draw()
+```
+![Pulse sequence](/figures/circuit.png)
+
+5. Declare and Update Variable
 ```python
 v1 = Variable(name="instruction", value_array=[Gaussian(), RaisedCos()], unit="")
 v2 = Variable(name="phase", value_array=[0, 0.5*np.pi], unit="rad")
@@ -67,38 +105,17 @@ var = Variables()
 var.add([v1, v2]) # zip sweep for v1 and v2
 var.add(v3)
 var.compile()
-```
 
-4. Run Circuit
-```python
 cir = Circuit()
-cir._apply(cd)
-cir.rx90(q1)
-cir.trigger([q1, q2, c12, r1, r2])
-cir.rz(0.5*np.pi, q2)
-cir.rzx90(c12)
-cir.trigger([q1, q2, c12, r1, r2])
-cir.rx90(q2)
-cir.add(Container(inst=v1), q2)
-cir.trigger([q1, q2, c12, r1, r2])
-cir.measurement(r1)
-cir.measurement(r2)
-```
-
-5. Update Variable and Compile Sequence
-```python
+cir.add(VirtualZ(phi=v2), q1)
+cir.add(Gaussian(amplitude=v1), q1)
+cir.add(FlatTop(Gaussian(amplitude=v3), top_duration=1000), q2)
 for update_command in var.update_command_list:
     cir.update_variables(update_command)
     cir.compile()
 ```
 
-6. Plot waveforms
-```python
-cir.draw()
-```
-![Pulse sequence](/figures/circuit.png)
-
-7. Run Circuit with the Measurement tools
+6. Run Circuit with the Measurement tools
 ```python
 # get waveform information
 waveforms = cir.get_waveform_information()
@@ -119,7 +136,7 @@ control.sequencer.set_waveforms(waveforms)
 dataset = control.take_data("test")
 ```
 
-8. Dump and Load Circuit (setting can be saved in the Registry)
+7. Dump and Load Circuit (setting can be saved in the Registry)
 ```python
 setting = cir.dump_setting()
 new_cir = Circuit()
