@@ -94,7 +94,7 @@ for update_command in var.update_command_list:
 
 6. Plot waveforms
 ```python
-cir.plot_waveform()
+cir.draw()
 ```
 ![Pulse sequence](/figures/circuit.png)
 
