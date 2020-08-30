@@ -87,7 +87,6 @@ for _ in range(3):
     cir.cnot(c51)
 cir.trigger([r1, q1,q2,q3,q4,q5], align="middle")
 cir.measurement(r1)
-cir.draw()
 ```
 
 4. Plot waveforms
