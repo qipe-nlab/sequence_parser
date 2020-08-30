@@ -2,6 +2,7 @@ import copy
 import numpy as np
 import matplotlib.pyplot as plt
 from .port import Port
+from .variable import Variable
 from .instruction.instruction import Instruction
 from .instruction.trigger import Trigger
 from .instruction.align import _AlignManager
@@ -53,6 +54,7 @@ class Sequence:
         self.port_list = []
         self.instruction_list = []
         self.variable_dict = {}
+        self.flag = {"compiled" : False}
 
     def _verify_port(self, port):
         """Verify new port
@@ -70,6 +72,18 @@ class Sequence:
         self.port_list.append(new_port)
         return new_port
 
+    def _verify_variable(self, variable):
+        """Verify new variable
+        Args:
+            variable (Variable): variable
+        """
+        if not isinstance(variable, Variable):
+            raise Exception(f"{variable} is not Variable object")
+
+        if variable.name not in self.variable_dict.keys():
+            self.variable_dict[variable.name] = []
+        self.variable_dict[variable.name].append(variable)
+
     def _verify_instruction(self, instruction):
         """Verify new instruction
         Args:
@@ -80,9 +94,7 @@ class Sequence:
         instruction = copy.deepcopy(instruction)
         instruction._get_variable()
         for variable in instruction.variables:
-            if variable.name not in self.variable_dict.keys():
-                self.variable_dict[variable.name] = []
-            self.variable_dict[variable.name].append(variable)
+            self._verify_variable(variable)
         return instruction
 
     def add(self, instruction, port):
@@ -128,6 +140,8 @@ class Sequence:
             for variable in self.variable_dict[variable_name]:
                 variable._set_value(index)
 
+        self.flag["compiled"] = False
+
     def compile(self):
         """Compile the instructions
 
@@ -144,10 +158,12 @@ class Sequence:
         for instruction, _ in self.instruction_list:
             instruction._fix_variable()
 
-        ## set trigger index and add Instructions on the Ports
-        self.compiled_instruction_list.append((Trigger(), self.port_list)) # start trigger (phase zero point)
+        ## generate compiled instruction list
+        self.compiled_instruction_list.append((Trigger(), self.port_list)) # start
         self.compiled_instruction_list += self.instruction_list
-        self.compiled_instruction_list.append((Trigger(), self.port_list)) # end trigger
+        self.compiled_instruction_list.append((Trigger(), self.port_list)) # end
+
+        ## append instructions on Ports
         for instruction, port in self.compiled_instruction_list:
             if isinstance(instruction, Trigger):
                 instruction.trigger_index = self.trigger_index
@@ -157,13 +173,20 @@ class Sequence:
             else:
                 port._add(instruction)
 
-        ## generate dag
+        ## generage directed acylic graph
         node_list = list(range(self.trigger_index))
-        weighted_edge_list = []
+        weighted_edge_dict = {}
         for port in self.port_list:
-            weighted_edge_list += port._get_trigger_edge_list()
+            for (fnode, bnode, weight) in port._get_trigger_edge_list():
+                if (fnode, bnode) in weighted_edge_dict.keys():
+                    weighted_edge_dict[(fnode, bnode)] = max(weighted_edge_dict[(fnode, bnode)], weight)
+                else:
+                    weighted_edge_dict[(fnode, bnode)] = weight
+        weighted_edge_list = []
+        for (fnode, bnode), weight in weighted_edge_dict.items():
+            weighted_edge_list.append((fnode, bnode, weight))
 
-        ## weighted topological sort
+        ## solve weighted topological sort
         self.trigger_position_list = weighted_topological_sort(node_list, weighted_edge_list)
 
         ## syncronize trigger_position
@@ -181,13 +204,18 @@ class Sequence:
         for port in self.port_list:
             port._write_waveform(self.max_waveform_lenght)
 
-    def plot_waveform(self, port_name_list=None, time_range=None, cancell_sideband=True):
-        """plot waveform saved in the Ports
+        self.flag["compiled"] = True
+
+    def draw(self, port_name_list=None, time_range=None, cancell_sideband=True):
+        """draw waveform saved in the Ports
         Args:
             port_name_list (list): List of the port_name to plot waveform
             time_range (tupple): time_range for plot written as (start, end)
             cancell_sideband (bool): bool index to identify whether cancell or not the waveform charping for plot
         """
+
+        if not self.flag["compiled"]:
+            self.compile()
 
         if port_name_list is None:
             plot_port_list = self.port_list
