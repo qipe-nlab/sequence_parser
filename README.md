@@ -142,6 +142,8 @@ new_cir = Circuit()
 new_cir.load_setting(setting)
 ```
 
-## To Do
-- Add variable Sequence
-- Add var.dump_setting()
+## To Do List
+- Add feature to bind the control port and the readout port of the same qubit, such as "cd._define_qubit(q0,r0)"
+- Add feature to get the summention of the several ports to represent the multiplexed readout port, such as "cd._define_mux(cavity=[r0,r1,r2,r3], pump=[p0])"
+- Add feature to sweep variable Sequence, such as "cir.vcall"
+- Add feature to save the variable on the registry, such as "var.dump_setting()"
