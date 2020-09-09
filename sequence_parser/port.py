@@ -28,7 +28,7 @@ class Port:
         """
         self.instruction_list = []
         self.syncronized_instruction_list = None
-        self.DAC_STEP = 0.2 # ns
+        self.DAC_STEP = 1.0 # ns
         self.SIDEBAND_FREQ = 0.25 # GHz
         self.waveform = None
         self.measurement_windows = []

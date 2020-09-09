@@ -3,8 +3,10 @@ from ..instruction import Instruction
 from .pulse_shape import SquareShape, GaussianShape, RaisedCosShape, DeriviativeShape, FlatTopShape
 
 def charp(time, envelope, frequency, phase):
-    phase_factor = np.exp(1j*(2*np.pi*frequency*time + phase))
-    waveform = phase_factor * envelope
+    envelope = np.complex128(envelope)
+    envelope.real = envelope.real * np.cos(2*np.pi*frequency*time + phase)
+    envelope.imag = envelope.imag * np.sin(2*np.pi*frequency*time + phase)
+    waveform = envelope.real + 1j*envelope.imag
     return waveform
 
 class Pulse(Instruction):
