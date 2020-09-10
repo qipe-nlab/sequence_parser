@@ -39,5 +39,5 @@ class SetAbsolutePhase(Command):
 
     def _execute(self, port):
         phase = self.tmp_params["phase"]
-        charp_frequency = port.SIDEBAND_FREQ
-        port.phase = phase - 2*np.pi*charp_frequency*port.position
+        charp_frequency = port.detuning
+        port.phase = - phase - 2*np.pi*charp_frequency*port.position
