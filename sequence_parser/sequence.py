@@ -237,7 +237,7 @@ class Sequence:
             for measurement_window in port.measurement_windows:
                 plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
             if cancell_sideband:
-                plot_waveform = np.exp(-1j*(2*np.pi*port.SIDEBAND_FREQ*port.time))*port.waveform
+                plot_waveform = np.exp(1j*(2*np.pi*port.SIDEBAND_FREQ*port.time))*port.waveform
             else:
                 plot_waveform = port.waveform
             plt.step(port.time, plot_waveform.real)
@@ -268,7 +268,7 @@ class Sequence:
             waveform_information[port.name] = {
                 "daq_length" : port.position,
                 "measurement_windows" : port.measurement_windows,
-                "waveform" : port.waveform,
+                "waveform" : port.waveform.real,
                 "waveform_updated" : False,
             }
         return waveform_information
