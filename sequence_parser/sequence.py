@@ -5,6 +5,7 @@ from .port import Port
 from .variable import Variable
 from .instruction.instruction import Instruction
 from .instruction.trigger import Trigger
+from .instruction.command import Delay
 from .instruction.align import _AlignManager
 from .util.topological_sort import weighted_topological_sort
 
@@ -129,7 +130,10 @@ class Sequence:
             sequence (Sequence): sequence
         """
         for instruction, port in sequence.instruction_list:
-            self.add(instruction, port)
+            if isinstance(instruction, Trigger):
+                self.trigger(port, align=instruction.align)
+            else:
+                self.add(instruction, port)
 
     def update_variables(self, update_command):
         """update values in variables
@@ -146,6 +150,7 @@ class Sequence:
         """Compile the instructions
 
         """
+        
         ## initialize before compile
         self.trigger_index = 0
         self.trigger_position_list = None
@@ -161,7 +166,7 @@ class Sequence:
         ## generate compiled instruction list
         self.compiled_instruction_list.append((Trigger(), self.port_list)) # start
         self.compiled_instruction_list += self.instruction_list
-        self.compiled_instruction_list.append((Trigger(), self.port_list)) # end
+        self.compiled_instruction_list.append((Trigger(), self.port_list))
 
         ## append instructions on Ports
         for instruction, port in self.compiled_instruction_list:
@@ -185,7 +190,7 @@ class Sequence:
         weighted_edge_list = []
         for (fnode, bnode), weight in weighted_edge_dict.items():
             weighted_edge_list.append((fnode, bnode, weight))
-
+        
         ## solve weighted topological sort
         self.trigger_position_list = weighted_topological_sort(node_list, weighted_edge_list)
 
@@ -263,10 +268,13 @@ class Sequence:
     def get_waveform_information(self):
         """get waveform information for I/O with measurement_tools
         """
+        if not self.flag["compiled"]:
+            self.compile()
+        
         waveform_information = {}
         for port in self.port_list:
             waveform_information[port.name] = {
-                "daq_length" : port.position,
+                "daq_length" : port.waveform.size*port.DAC_STEP,
                 "measurement_windows" : port.measurement_windows,
                 "waveform" : port.waveform.real,
                 "waveform_updated" : False,

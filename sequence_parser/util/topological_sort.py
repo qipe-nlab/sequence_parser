@@ -18,7 +18,7 @@ def weighted_topological_sort(node_list, weighted_edge_list):
         head_node = head_node_list.pop(0)
         head_pos = node_pos[head_node]
         next_head_node_list = []
-        for fnode, bnode, weight in weighted_edge_list:
+        for fnode, bnode, weight in weighted_edge_list[:]:
             if fnode == head_node:
                 next_head_node_list.append(bnode)
                 if node_pos[bnode] is None:
@@ -30,7 +30,7 @@ def weighted_topological_sort(node_list, weighted_edge_list):
         for next_head_node in next_head_node_list:
             flag = True
             for fnode, bnode, weight in weighted_edge_list:
-                if bnode == next_head_node_list:
+                if bnode == next_head_node:
                     flag = False
             if flag:
                 if next_head_node not in head_node_list:
