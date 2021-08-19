@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 from .sequence import Sequence
 from .instruction.instruction_parser import compose
 from .instruction.command import VirtualZ, Delay
+from .instruction.align import _AlignManager
 from .util.decompose import matrix_to_su2, matrix_to_su4
 
 plt.rcParams['ytick.minor.visible'] = False
@@ -28,20 +29,20 @@ class CircuitBase(Sequence):
         self._apply_gate_table(backend.gate_table)
             
     def _apply_port_table(self, port_table):
-        self.q = []
-        self.r = []
+        self.q = {}
+        self.r = {}
         self.port_table = port_table
-        for port in self.port_table.nodes.values():
-            self.q.append(self._verify_port(port.q))
-            self.r.append(self._verify_port(port.r))
+        for idx, port in self.port_table.nodes.items():
+            self.q[idx] = self._verify_port(port.q)
+            self.r[idx] = self._verify_port(port.r)
             
-        self.c = []
-        for port in self.port_table.edges.values():
-            self.c.append(self._verify_port(port))
+        self.c = {}
+        for idx, port in self.port_table.edges.items():
+            self.c[idx] = self._verify_port(port)
             
-        self.i = []
-        for port in self.port_table.impas.values():
-            self.i.append(self._verify_port(port))
+        self.i = {}
+        for idx, port in self.port_table.impas.items():
+            self.i[idx] = self._verify_port(port)
             
     def _apply_gate_table(self, gate_table):
         self.gate_table = gate_table
@@ -50,15 +51,13 @@ class CircuitBase(Sequence):
         """Add Instruction to QubitPort.q
         Args:
             instruction (Instruction): Pulse, Command, or Trigger
-            target (int or list): index of target port, or index of [control, target] for cross port
+            target (int or tuple): index of target port, or index of (control, target) for cross port
         """
         
         if isinstance(target, int):
             port = self.port_table.nodes[target].q
-        elif isinstance(target, list):
+        elif isinstance(target, tuple):
             port = self.port_table.edges[target]
-        else:
-            raise
             
         instruction = self._verify_instruction(instruction)
         port = self._verify_port(port)
@@ -71,14 +70,35 @@ class CircuitBase(Sequence):
             target (int or list): index of target port
         """
         
+        instruction = self._verify_instruction(instruction)
+        port = self._verify_port(self.port_table.nodes[target].r)
+        self.instruction_list.append((instruction, port))
+        
+    def qalign(self, target, mode):
+        """Change align mode
+        Args:
+            mode (string): "left" or "sequencial"
+        """
+        
+        if isinstance(target, int):
+            port = self.port_table.nodes[target].q
+        else:
+            raise
+        
+        return _AlignManager(self, port, mode)
+    
+    def ralign(self, target, mode):
+        """Change align mode
+        Args:
+            mode (string): "left" or "sequencial"
+        """
+        
         if isinstance(target, int):
             port = self.port_table.nodes[target].r
         else:
             raise
-            
-        instruction = self._verify_instruction(instruction)
-        port = self._verify_port(port)
-        self.instruction_list.append((instruction, port))
+        
+        return _AlignManager(self, port, mode)
             
     def qtrigger(self, qubits, align="left"):
         """Add Trigger into the instruction_list
@@ -127,6 +147,13 @@ class CircuitBase(Sequence):
             target (int): index of the target qubit port
         """
         self.gate("rx90", target)
+        
+    def rx180(self, target):
+        """Execute a rx180 gate
+        Args:
+            target (int): index of the target qubit port
+        """
+        self.gate("rx180", target)
 
     def rzx45(self, control, target):
         """Execute a rzx45 gate
@@ -135,6 +162,14 @@ class CircuitBase(Sequence):
             target (int): index of the target qubit port
         """
         self.gate("rzx45", (control, target))
+        
+    def rzx90(self, control, target):
+        """Execute a rzx90 gate
+        Args:
+            control (int): index of the control qubit port
+            target (int): index of the target qubit port
+        """
+        self.gate("rzx90", (control, target))
 
     def measurement(self, target):
         """Execute measurement
@@ -148,12 +183,19 @@ class CircuitBase(Sequence):
             if gate == "meas":
                 self.measurement(key)
 
-    def draw(self, time_range=None, cancell_sideband=True):
+    def draw(self, time_range=None, cancell_sideband=True, reflect_skew=False):
         """draw waveform saved in the Ports
         Args:
             time_range (tupple): time_range for plot written as (start, end)
             cancell_sideband (bool): bool index to identify whether cancell or not the waveform charping for plot
         """
+        
+        if reflect_skew is False:
+            skew_list = []
+            for port in self.c.values():
+                skew_list.append(port.skew)
+                port.skew = 0
+        
         if not self.flag["compiled"]:
             self.compile()
 
@@ -200,6 +242,10 @@ class CircuitBase(Sequence):
         plt.tick_params(labelbottom=True)
         plt.xlabel("Time (ns)")
         plt.show()
+        
+        if reflect_skew is False:
+            for port, skew in zip(self.c.values(), skew_list):
+                port.skew = skew
         
     def get_waveform_information(self):
         """get waveform information for I/O with measurement_tools
@@ -258,11 +304,19 @@ class CircuitBase(Sequence):
                 "jpa"    : idir,
             }
             
+        self.reset_compile()
+            
         return waveform_information
 
 class Circuit(CircuitBase):
-    def __init__(self, backend):
+    def __init__(self, backend, option=None):
         super().__init__(backend)
+        if option is None:
+            option = {
+                "rx180" : "rx90",
+                "rzx90" : "tpcx",
+            }
+        self.option = option
 
     def irx90(self, target):
         """Execute a inversed rx90 gate
@@ -303,16 +357,22 @@ class Circuit(CircuitBase):
         Args:
             target (int): index of the target qubit port
         """
-        self.rx90(target)
-        self.rx90(target)
         
+        if self.option["rx180"] == "rx90":
+            self.rx90(target)
+            self.rx90(target)
+            
+        elif self.option["rx180"] == "rx180":
+            self.rx180(target)
+
     def Y(self, target):
         """Execute a Y gate
         Args:
             target (int): index of the target qubit port
         """
-        self.ry90(target)
-        self.ry90(target)
+        self.rz(-0.5*np.pi, target)
+        self.X(target)
+        self.rz(+0.5*np.pi, target)
         
     def Z(self, target):
         """Execute a Z gate
@@ -338,6 +398,24 @@ class Circuit(CircuitBase):
         self.Z(target)
         self.Y(target)
         self.Z(target)
+        
+    def Pauli(self, label, target):
+        """Execute a Pauli gate
+        Args:
+            label (str) : I or X or Y or Z
+            target (int): index of the target qubit port
+        """
+        
+        if label == "I":
+            self.I(target)
+        elif label == "X":
+            self.X(target)
+        elif label == "Y":
+            self.Y(target)
+        elif label == "Z":
+            self.Z(target)
+        else:
+            raise
     
     def irzx45(self, control, target):
         """Execute a inversed irzx45 gate
@@ -355,14 +433,20 @@ class Circuit(CircuitBase):
             control (int): index of the control qubit port
             target (int): index of the target qubit port
         """
-        self.qtrigger([control, target])
-        self.rzx45(control, target)
-        self.qtrigger([control, target])
-        self.X(control)
-        self.qtrigger([control, target])
-        self.irzx45(control, target)
-        self.qtrigger([control, target])
-        self.iX(control)
+        
+        if self.option["rzx90"] == "tpcx":
+            self.qtrigger([control, target])
+            self.rzx45(control, target)
+            self.qtrigger([control, target])
+            self.X(control)
+            self.qtrigger([control, target])
+            self.irzx45(control, target)
+            self.qtrigger([control, target])
+            self.iX(control)
+            
+        elif self.option["rzx90"] == "dcx":
+            super().rzx90(control, target)
+            
 
     def cnot(self, control, target):
         """Execute a inversed cnot gate
@@ -373,6 +457,22 @@ class Circuit(CircuitBase):
         self.rz(-0.5*np.pi, control)
         self.rzx90(control, target)
         self.irx90(target)
+        
+    def icnot(self, control, target):
+        """Execute a inversed cnot gate
+        Args:
+            control (int): index of the control qubit port
+            target (int): index of the target qubit port
+        """
+        H = 0.5**(0.5)*np.array([[1,1],[1,-1]])
+        irx90 = 0.5**(0.5)*np.array([[1,1j],[1j,1]])
+        
+        self.rz(-0.5*np.pi, target)
+        self.su2(H, control)
+        self.su2(H, target)
+        self.rzx90(control, target)
+        self.su2(irx90@H, control)
+        self.su2(H, target)
 
     def prep_init(self, pauli, index, target):
         """Prepare the eigenstate of Pauli operator on the indicated qubit
@@ -427,7 +527,7 @@ class Circuit(CircuitBase):
     def su4(self, matrix, control, target):
         """Execute the arbitrary two-qubit gate with Cartan's KAK decomposition
         Args:
-            matrix (np.ndarray): matrix expression of the single-qubit gate
+            matrix (np.ndarray): matrix expression of the two-qubit gate
             control (int): index of the control qubit port
             target (int): index of the target qubit port
         """

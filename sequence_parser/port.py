@@ -15,6 +15,8 @@ class Port:
             name (str): port name
         """
         self.name = name
+        self.skew = 0.0 # ns
+        self.skew_delay = 0.0 # ns
         self._reset()
 
     def __repr__(self):
@@ -121,6 +123,16 @@ class Port:
                     last_align = instruction.align
                     trigger_edge_list = []
             trigger_edge_list.append(instruction)
+            
+    def _sync_skew(self, delay):
+        """Syncronize the skew from other ports
+        Args:
+            delay (float) : wait time (ns) to syncronize skew with other ports
+        """
+        self.skew_delay = delay
+        initial_delay = Delay(delay)
+        initial_delay._fix_variable()
+        self.syncronized_instruction_list.insert(0, initial_delay)
 
     def _execute_instructions(self):
         """Execute all instructions
