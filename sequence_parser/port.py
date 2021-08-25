@@ -20,10 +20,10 @@ class Port:
         self._reset()
 
     def __repr__(self):
-        return self.name
+        return str(self.name)
 
     def __str__(self):
-        return self.name
+        return str(self.name)
 
     def _reset(self):
         """Initialize all elements
