@@ -4,8 +4,10 @@ import matplotlib.pyplot as plt
 from .sequence import Sequence
 from .instruction.instruction_parser import compose
 from .instruction.command import VirtualZ, Delay
+from .instruction.acquire import Acquire
 from .instruction.align import _AlignManager
 from .util.decompose import matrix_to_su2, matrix_to_su4
+from sequence_parser.instruction import acquire
 
 plt.rcParams['ytick.minor.visible'] = False
 plt.rcParams['xtick.top']           = True
@@ -23,7 +25,6 @@ plt.rcParams['axes.linewidth']      = 1.0
 class CircuitBase(Sequence):
     def __init__(self, backend):
         super().__init__()
-        
         self.backend = backend
         self._apply_port_table(backend.port_table)
         self._apply_gate_table(backend.gate_table)
@@ -31,16 +32,16 @@ class CircuitBase(Sequence):
     def _apply_port_table(self, port_table):
         self.q = {}
         self.r = {}
+        self.a = {}
+        self.c = {}
+        self.i = {}
         self.port_table = port_table
         for idx, port in self.port_table.nodes.items():
             self.q[idx] = self._verify_port(port.q)
             self.r[idx] = self._verify_port(port.r)
-            
-        self.c = {}
+            self.a[idx] = self._verify_port(port.a)
         for idx, port in self.port_table.edges.items():
             self.c[idx] = self._verify_port(port)
-            
-        self.i = {}
         for idx, port in self.port_table.impas.items():
             self.i[idx] = self._verify_port(port)
             
@@ -53,12 +54,11 @@ class CircuitBase(Sequence):
             instruction (Instruction): Pulse, Command, or Trigger
             target (int or tuple): index of target port, or index of (control, target) for cross port
         """
-        
         if isinstance(target, int):
             port = self.port_table.nodes[target].q
         elif isinstance(target, tuple):
             port = self.port_table.edges[target]
-            
+
         instruction = self._verify_instruction(instruction)
         port = self._verify_port(port)
         self.instruction_list.append((instruction, port))
@@ -69,37 +69,22 @@ class CircuitBase(Sequence):
             instruction (Instruction): Pulse, Command, or Trigger
             target (int or list): index of target port
         """
-        
         instruction = self._verify_instruction(instruction)
         port = self._verify_port(self.port_table.nodes[target].r)
         self.instruction_list.append((instruction, port))
-        
-    def qalign(self, target, mode):
-        """Change align mode
+
+    def aadd(self, instruction, target):
+        """Add Instruction to QubitPort.a
         Args:
-            mode (string): "left" or "sequencial"
+            instruction (Instruction): Acquire
+            target (int or list): index of target port
         """
-        
-        if isinstance(target, int):
-            port = self.port_table.nodes[target].q
-        else:
+        if isinstance(instruction, Acquire):
             raise
-        
-        return _AlignManager(self, port, mode)
-    
-    def ralign(self, target, mode):
-        """Change align mode
-        Args:
-            mode (string): "left" or "sequencial"
-        """
-        
-        if isinstance(target, int):
-            port = self.port_table.nodes[target].r
-        else:
-            raise
-        
-        return _AlignManager(self, port, mode)
-            
+        instruction = self._verify_instruction(instruction)
+        port = self._verify_port(self.port_table.nodes[target].a)
+        self.instruction_list.append((instruction, port))
+
     def qtrigger(self, qubits, align="left"):
         """Add Trigger into the instruction_list
         Args:
@@ -107,12 +92,24 @@ class CircuitBase(Sequence):
             align (str): indicate align mode in the next trigger-edge ("left", "middle", and "right")
         """
         control_port_list = [self.port_table.nodes[qubit].q for qubit in qubits]
+        self.trigger(control_port_list, align)
+
+    def rtrigger(self, qubits, align="left"):
+        """Add Trigger into the instruction_list
+        Args:
+            qubits (list): list of the index of the target qubit ports to be syncronized
+            align (str): indicate align mode in the next trigger-edge ("left", "middle", and "right")
+        """
+        muxes = []
+        for qubit in qubits:
+            muxes += self.port_table.nodes[qubit].mux
+        muxes = set(muxes)
+
+        control_port_list = [self.port_table.nodes[qubit].q for qubit in qubits]
         readout_port_list = [self.port_table.nodes[qubit].r for qubit in qubits]
-        cross_port_list = []
-        for i in itertools.product(qubits, repeat=2):
-            if i in self.port_table.edges.keys():
-                cross_port_list.append(self.port_table.edges[i])
-        self.trigger(control_port_list + readout_port_list + cross_port_list, align)
+        acquire_port_list = [self.port_table.nodes[qubit].a for qubit in qubits]
+        impa_port_list = [self.port_table.impas[mux] for mux in muxes]
+        self.trigger(control_port_list + readout_port_list + acquire_port_list + impa_port_list, align)
         
     def gate(self, key, index):
         """Execute a gate
@@ -177,11 +174,13 @@ class CircuitBase(Sequence):
             target (int): index of the target qubit port
         """
         self.gate("meas", target)
-        
-    def measurement_all(self):
-        for (gate, key) in self.gate_table.gate_table.keys():
-            if gate == "meas":
-                self.measurement(key)
+
+    def pump(self, target):
+        """Execute measurement
+        Args:
+            target (int): index of the target impa port
+        """
+        self.gate("pump", target)
 
     def draw(self, time_range=None, cancell_sideband=True, reflect_skew=False):
         """draw waveform saved in the Ports
@@ -192,7 +191,8 @@ class CircuitBase(Sequence):
         
         if reflect_skew is False:
             skew_list = []
-            for port in self.c.values():
+            all_ports = list(self.q.values()) + list(self.r.values()) + list(self.a.values()) + list(self.i.values()) + list(self.c.values())
+            for port in all_ports:
                 skew_list.append(port.skew)
                 port.skew = 0
         
@@ -203,10 +203,15 @@ class CircuitBase(Sequence):
             plot_port_list = self.port_list
         else:
             plot_port_list = []
-            plot_port_list += [self._verify_port(node.r) for node in self.port_table.nodes.values()]
             plot_port_list += [self._verify_port(node.q) for node in self.port_table.nodes.values()]
             plot_port_list += [self._verify_port(node)   for node in self.port_table.edges.values()]
-            plot_port_list += [self._verify_port(node)   for node in self.port_table.impas.values()]
+            for (impa, nodes) in self.port_table.muxes.values():
+                for node in nodes:
+                    rport = self._verify_port(node.r)
+                    aport = self._verify_port(node.a)
+                    rport.measurement_windows = aport.measurement_windows
+                    plot_port_list.append(rport)
+                plot_port_list.append(self._verify_port(impa))
         
         if time_range is None:
             plot_time_range = (0, self.max_waveform_lenght)
@@ -244,7 +249,7 @@ class CircuitBase(Sequence):
         plt.show()
         
         if reflect_skew is False:
-            for port, skew in zip(self.c.values(), skew_list):
+            for port, skew in zip(all_ports, skew_list):
                 port.skew = skew
         
     def get_waveform_information(self):
@@ -259,6 +264,7 @@ class CircuitBase(Sequence):
             
             qport = self._verify_port(port.q)
             rport = self._verify_port(port.r)
+            aport = self._verify_port(port.a)
             
             qdir = {
                 "daq_length" : qport.waveform.size*qport.DAC_STEP,
@@ -268,7 +274,7 @@ class CircuitBase(Sequence):
             }
             rdir = {
                 "daq_length" : rport.waveform.size*rport.DAC_STEP,
-                "measurement_windows" : rport.measurement_windows,
+                "measurement_windows" : aport.measurement_windows,
                 "waveform" : rport.waveform.real,
                 "waveform_updated" : False,
             }
@@ -309,14 +315,8 @@ class CircuitBase(Sequence):
         return waveform_information
 
 class Circuit(CircuitBase):
-    def __init__(self, backend, option=None):
+    def __init__(self, backend):
         super().__init__(backend)
-        if option is None:
-            option = {
-                "rx180" : "rx90",
-                "rzx90" : "tpcx",
-            }
-        self.option = option
 
     def irx90(self, target):
         """Execute a inversed rx90 gate
@@ -325,7 +325,7 @@ class Circuit(CircuitBase):
         """
         self.rz(np.pi, target)
         self.rx90(target)
-        self.rz(np.pi, target)
+        self.rz(-np.pi, target)
 
     def ry90(self, target):
         """Execute a ry90 gate
@@ -357,13 +357,8 @@ class Circuit(CircuitBase):
         Args:
             target (int): index of the target qubit port
         """
-        
-        if self.option["rx180"] == "rx90":
-            self.rx90(target)
-            self.rx90(target)
-            
-        elif self.option["rx180"] == "rx180":
-            self.rx180(target)
+        self.rx90(target)
+        self.rx90(target)
 
     def Y(self, target):
         """Execute a Y gate
@@ -433,20 +428,10 @@ class Circuit(CircuitBase):
             control (int): index of the control qubit port
             target (int): index of the target qubit port
         """
-        
-        if self.option["rzx90"] == "tpcx":
-            self.qtrigger([control, target])
-            self.rzx45(control, target)
-            self.qtrigger([control, target])
-            self.X(control)
-            self.qtrigger([control, target])
-            self.irzx45(control, target)
-            self.qtrigger([control, target])
-            self.iX(control)
-            
-        elif self.option["rzx90"] == "dcx":
-            super().rzx90(control, target)
-            
+        self.rzx45(control, target)
+        self.X(control)
+        self.irzx45(control, target)
+        self.iX(control)
 
     def cnot(self, control, target):
         """Execute a inversed cnot gate
@@ -543,6 +528,29 @@ class Circuit(CircuitBase):
         self.cnot(control, target)
         self.su2(gates[3][0], control)
         self.su2(gates[3][1], target)
+
+    def measurements(self, target):
+        """Execute measurements for many qubits
+        Args:
+            target (list): list of the index of the target qubit port
+        """
+        muxes = []
+        for i in target:
+            muxes += self.port_table.nodes[i].mux
+        muxes = set(muxes)
+
+        self.rtrigger(target)
+        for i in target:
+            self.measurement(i)
+        for i in muxes:
+            self.pump(i)
+        self.rtrigger(target)
+
+    def measurement_all(self):
+        """Execute measurements for all qubits
+        """
+        target = self.port_table.nodes.keys()
+        self.measurements(target)
         
 class MitigatedCircuit(Circuit):
     def __init__(self, backend, repeat):

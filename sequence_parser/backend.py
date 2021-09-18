@@ -6,10 +6,12 @@ class QubitPort:
         self.node = node
         self.control = Port(f"q{node}.q")
         self.readout = Port(f"q{node}.r")
+        self.acquire = Port(f"q{node}.a")
         
         # alias
         self.q = self.control
         self.r = self.readout
+        self.a = self.acquire
         
         self.lshift = {}
         self.rshift = {}
