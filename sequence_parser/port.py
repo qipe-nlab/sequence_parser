@@ -59,10 +59,10 @@ class Port:
             duration (float): progress time
 
         """
-        if self.align_modes[-1][0] is "sequential":
+        if self.align_modes[-1][0] == "sequential":
             self.align_modes[-1][1].append(duration)
             self.position += duration
-        if self.align_modes[-1][0] is "left":
+        if self.align_modes[-1][0] == "left":
             self.align_modes[-1][1].append(duration)
 
     def _get_trigger_edge_list(self):
