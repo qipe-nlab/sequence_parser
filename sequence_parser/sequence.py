@@ -234,7 +234,7 @@ class Sequence:
         Args:
             port_name_list (list): List of the port_name to plot waveform
             time_range (tupple): time_range for plot written as (start, end)
-            cancell_sideband (bool): bool index to identify whether cancell or not the waveform charping for plot
+            cancell_sideband (bool): bool index to identify whether cancell or not the IF frequency for plot
         """
 
         if not self.flag["compiled"]:

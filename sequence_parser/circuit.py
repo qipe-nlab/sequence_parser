@@ -186,7 +186,7 @@ class CircuitBase(Sequence):
         """draw waveform saved in the Ports
         Args:
             time_range (tupple): time_range for plot written as (start, end)
-            cancell_sideband (bool): bool index to identify whether cancell or not the waveform charping for plot
+            cancell_sideband (bool): bool index to identify whether cancell or not the IF frequency for plot
         """
         
         if reflect_skew is False:
