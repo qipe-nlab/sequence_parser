@@ -120,7 +120,7 @@ class Sequence:
     def align(self, port, mode):
         """Change align mode
         Args:
-            mode (string): "left" or "sequencial"
+            mode (string): "left" or "sequential"
         """
         return _AlignManager(self, port, mode)
 

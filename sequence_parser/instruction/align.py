@@ -30,8 +30,8 @@ class _DelAlign(Command):
     def _execute(self, port):
         mode, dur_list = port.align_modes.pop()
 
-        if port.align_modes[-1][0] is "sequencial":
-            if mode is "sequencial":
+        if port.align_modes[-1][0] is "sequential":
+            if mode is "sequential":
                 port.align_modes[-1][1].append(sum(dur_list))
 
             if mode is "left":
@@ -39,7 +39,7 @@ class _DelAlign(Command):
                 port.align_modes[-1][1].append(max(dur_list))
 
         if port.align_modes[-1][0] is "left":
-            if mode is "sequencial":
+            if mode is "sequential":
                 port.position -= sum(dur_list)
                 port.align_modes[-1][1].append(sum(dur_list))
 

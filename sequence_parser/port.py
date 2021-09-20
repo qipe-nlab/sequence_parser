@@ -42,7 +42,7 @@ class Port:
         self.position = 0
         self.phase = 0
         self.detuning = 0
-        self.align_modes = [("sequencial", [])]
+        self.align_modes = [("sequential", [])]
 
     def _add(self, instruction):
         """Add Instruction into the instruction_list
@@ -59,7 +59,7 @@ class Port:
             duration (float): progress time
 
         """
-        if self.align_modes[-1][0] is "sequencial":
+        if self.align_modes[-1][0] is "sequential":
             self.align_modes[-1][1].append(duration)
             self.position += duration
         if self.align_modes[-1][0] is "left":

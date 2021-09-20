@@ -61,7 +61,7 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
             imeas.add(Delay(duration=-10), node.r)
             with imeas.align(node.r, mode="left"):
                 imeas.add(FlatTop(Gaussian(amplitude=1.0, fwhm=10, duration=40), top_duration=top_dur-10), node.r)
-                with imeas.align(node.r, mode="sequencial"):
+                with imeas.align(node.r, mode="sequential"):
                     imeas.add(Delay(dmeas), node.r)
                     imeas.add(Acquire(duration=ac_dur), node.r)
             imeas.add(Delay(duration=-10), node.r)
@@ -129,7 +129,7 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
             rzx90.add(FlatTop(RaisedCos(amplitude=+cra, duration=cre), top_duration=crt), qc>>qt)
             with rzx90.align(qt.q, mode="left"):
                 rzx90.add(FlatTop(RaisedCos(amplitude=+cta, duration=cre), top_duration=crt), qt.q)
-                with rzx90.align(qt.q, mode="sequencial"):
+                with rzx90.align(qt.q, mode="sequential"):
                     rzx90.add(RaisedCos(amplitude=+rta, duration=0.5*(crt+cre)), qt.q)
                     rzx90.add(RaisedCos(amplitude=-rta, duration=0.5*(crt+cre)), qt.q)
             rzx90.trigger([qc.q,qt.q,qc.r,qt.r,qc>>qt])
