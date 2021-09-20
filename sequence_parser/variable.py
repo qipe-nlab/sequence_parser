@@ -1,8 +1,13 @@
 import itertools
+from typing import Sequence, TypeVar
+
 import numpy as np
 
+T = TypeVar('T')
+
+
 class Variable:
-    def __init__(self, name, value_array, unit):
+    def __init__(self, name: str, value_array: Sequence[T], unit: str):
         self.name = name
         self.value_array = np.asarray(value_array)
         self.unit = unit
@@ -10,12 +15,13 @@ class Variable:
 
     def __repr__(self):
         return f"Variable ({self.name})"
-        
+
     def __str__(self):
         return f"Variable ({self.name})"
 
-    def _set_value(self, idx):
+    def _set_value(self, idx: int):
         self.value = self.value_array[idx]
+
 
 class Variables:
     def __init__(self):
@@ -38,7 +44,7 @@ class Variables:
                 raise Exception(f"{var.name} is already used in the variable name")
             tmp_var_name_list.append(var.name)
             tmp_var_size_list.append(var.size)
-        
+
         if len(set(tmp_var_size_list)) != 1:
             raise Exception("zipped variables must have same size")
 
@@ -56,7 +62,7 @@ class Variables:
 
     def compile(self):
         """Compile the variables
-        
+
         """
         sweep_axis = [tuple(range(i)) for i in self.variable_size_list]
         sweep_index = list(itertools.product(*sweep_axis))
