@@ -30,7 +30,7 @@ for node, port in pt.nodes.items():
     meas = Sequence()
     with meas.align(port.r, mode="left"):
         meas.add(FlatTop(RaisedCos(amplitude=0.2, duration=10), top_duration=100), port.r)
-        with meas.align(port.r, mode="sequencial"):
+        with meas.align(port.r, mode="sequential"):
             meas.add(Delay(10), port.r)
             meas.add(Acquire(duration=80), port.r)
     gt._add_gate("meas", node, meas)

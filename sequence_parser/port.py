@@ -37,12 +37,12 @@ class Port:
         self._execute_reset()
 
     def _execute_reset(self):
-        """Initialize several elements overwrited by the execute function
+        """Initialize several elements overwritten by the execute function
         """
         self.position = 0
         self.phase = 0
         self.detuning = 0
-        self.align_modes = [("sequencial", [])]
+        self.align_modes = [("sequential", [])]
 
     def _add(self, instruction):
         """Add Instruction into the instruction_list
@@ -59,17 +59,17 @@ class Port:
             duration (float): progress time
 
         """
-        if self.align_modes[-1][0] is "sequencial":
+        if self.align_modes[-1][0] == "sequential":
             self.align_modes[-1][1].append(duration)
             self.position += duration
-        if self.align_modes[-1][0] is "left":
+        if self.align_modes[-1][0] == "left":
             self.align_modes[-1][1].append(duration)
 
     def _get_trigger_edge_list(self):
-        """Evaluate the minimum duration between neighbor Triggers
+        """Evaluate the minimum duration between neighboring Triggers
 
         Returns:
-            trigger_edge_list (list): list of the minimum duration between the neighbor Triggers
+            trigger_edge_list (list): list of the minimum duration between neighboring Triggers
         """
         self._execute_reset()
         self.trigger_node_list = []

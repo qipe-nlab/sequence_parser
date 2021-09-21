@@ -66,7 +66,7 @@ for port in [r1,r2,r3,r4,r5]:
     meas = Sequence()
     with meas.align(port, mode="left"):
         meas.add(FlatTop(RaisedCos(amplitude=0.5, duration=10), top_duration=500), port)
-        with meas.align(port, mode="sequencial"):
+        with meas.align(port, mode="sequential"):
             meas.add(Delay(100), port)
             meas.add(Acquire(duration=300), port)
     meas_setting = meas.dump_setting()

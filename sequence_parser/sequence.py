@@ -120,7 +120,7 @@ class Sequence:
     def align(self, port, mode):
         """Change align mode
         Args:
-            mode (string): "left" or "sequencial"
+            mode (string): "left" or "sequential"
         """
         return _AlignManager(self, port, mode)
 
@@ -229,12 +229,12 @@ class Sequence:
 
         self.flag["compiled"] = True
 
-    def draw(self, port_name_list=None, time_range=None, cancell_sideband=True):
+    def draw(self, port_name_list=None, time_range=None, cancel_sideband=True):
         """draw waveform saved in the Ports
         Args:
             port_name_list (list): List of the port_name to plot waveform
             time_range (tupple): time_range for plot written as (start, end)
-            cancell_sideband (bool): bool index to identify whether cancell or not the waveform charping for plot
+            cancel_sideband (bool): bool index to identify whether cancel or not the IF frequency for plot
         """
 
         if not self.flag["compiled"]:
@@ -259,7 +259,7 @@ class Sequence:
             plt.axhline(0, color="black", linestyle="-")
             for measurement_window in port.measurement_windows:
                 plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
-            if cancell_sideband:
+            if cancel_sideband:
                 plot_waveform = np.exp(1j*(2*np.pi*port.SIDEBAND_FREQ*port.time))*port.waveform
             else:
                 plot_waveform = port.waveform
