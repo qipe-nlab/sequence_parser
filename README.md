@@ -49,7 +49,23 @@ then, you'll get as follows,
   3    |  Square                                                                 |  Q2                                      
 ```
 
-3. Declare Preset Gates
+3. Call feature
+In sequence parser, we can call the pre-declared sequence into the another sequence
+```python
+sub = Sequence()
+sub.add(Gaussian(amplitude=1, fwhm=50, duration=200), Port("Q0"))
+sub.add(RaisedCos(amplitude=1, duration=200), Port("Q1"))
+sub.trigger([Port("Q0"), Port("Q1")])
+sub.add(Square(amplitude=1, duration=100), Port("Q2"))
+
+main = Sequence()
+main.call(sub)
+main.add(VirtualZ(phase=0.5*np.pi), Port("Q0"))
+main.call(sub)
+```
+
+4. Declare Preset Gates
+we can declare qubit geometry and gate implementation in advance.
 ```python
 pt = PortTable()
 pt._add_muxes([(0, [0,1,2,3])])
@@ -93,7 +109,7 @@ backend.add_port_table(pt)
 backend.add_gate_table(gt)
 ```
 
-4. Run Circuit
+5. Run Circuit
 ```python
 cir = Circuit(backend)
 cir.icnot(0,1)
@@ -108,13 +124,13 @@ cir.cnot(1,3)
 cir.measurements([0,3])
 ```
 
-5. Plot waveforms
+6. Plot waveforms
 ```python
 cir.draw(reflect_skew=False)
 ```
 ![Pulse sequence](/figures/circuit.png)
 
-6. Declare and Update Variable
+7. Declare and Update Variable
 ```python
 from sequence_parser.variable import Variable, Variables
 
@@ -136,7 +152,7 @@ for update_command in var.update_command_list:
     seq.compile()
 ```
 
-7. Run Circuit with the Measurement tools
+8. Run Circuit with the Measurement tools
 ```python
 import measurement_tool as mt
 session = mt.Session(
@@ -154,7 +170,7 @@ circuits = [cir1, cir2, cir3, ...]
 dataset = qm.take_data(circuits)
 ```
 
-8. Dump and Load Circuit (setting can be saved in the Registry)
+9. Dump and Load Circuit (setting can be saved in the Registry)
 ```python
 setting = cir.dump_setting()
 new_cir = Circuit()
