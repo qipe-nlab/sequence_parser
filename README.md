@@ -50,6 +50,7 @@ then, you'll get as follows,
 ```
 
 3. Call feature
+
 In sequence parser, we can call the pre-declared sequence into the another sequence
 ```python
 sub = Sequence()
@@ -65,6 +66,7 @@ main.call(sub)
 ```
 
 4. Declare Preset Gates
+
 we can declare qubit geometry and gate implementation in advance.
 ```python
 pt = PortTable()
