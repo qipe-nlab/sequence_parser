@@ -15,7 +15,6 @@ Sequence Parser will streamline experiments by increasing the reusability of pul
 1. Import Modules
 ```python
 import numpy as np
-from sequence_parser.variable import Variable, Variables
 from sequence_parser.sequence import Sequence
 from sequence_parser.port import Port
 from sequence_parser.circuit import Circuit
@@ -90,18 +89,21 @@ cir.draw(reflect_skew=False)
 
 5. Declare and Update Variable
 ```python
-v1 = Variable(name="instruction", value_array=[Gaussian(), RaisedCos()], unit="")
+from sequence_parser.variable import Variable, Variables
+
+v1 = Variable(name="amplitude_0", value_array=[0, 1.0], unit="")
 v2 = Variable(name="phase", value_array=[0, 0.5*np.pi], unit="rad")
-v3 = Variable(name="amplitude", value_array=[0, 0.5, 1.0], unit="")
+v3 = Variable(name="amplitude_1", value_array=[0, 0.5, 1.0], unit="")
+
 var = Variables()
 var.add([v1, v2]) # zip sweep for v1 and v2
 var.add(v3)
 var.compile()
 
 seq = Sequence()
-seq.add(VirtualZ(phi=v2), Port("Q1"))
-seq.add(Gaussian(amplitude=v1), Port("Q1"))
-seq.add(FlatTop(Gaussian(amplitude=v3), top_duration=1000), Port("Q2"))
+seq.add(VirtualZ(phase=v2), Port("Q1"))
+seq.add(Gaussian(amplitude=v1, fwhm=10, duration=30), Port("Q1"))
+seq.add(FlatTop(Gaussian(amplitude=v3), top_duration=100), Port("Q2"))
 for update_command in var.update_command_list:
     seq.update_variables(update_command)
     seq.compile()
