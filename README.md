@@ -22,7 +22,32 @@ from sequence_parser.backend import PortTable, GateTable, Backend
 from sequence_parser.instruction import *
 ```
 
-2. Declare Preset Gates
+2. Most simple example
+```python
+seq = Sequence()
+seq.add(Gaussian(amplitude=1, fwhm=50, duration=200), Port("Q0"))
+seq.add(RaisedCos(amplitude=1, duration=200), Port("Q1"))
+seq.trigger([Port("Q0"), Port("Q1")])
+seq.add(Square(amplitude=1, duration=100), Port("Q2"))
+```
+instruction list included in seq can be visible with 
+```python
+print(seq)
+```
+then, you'll get as follows,
+                                               Sequence Instruction List                                                
+------------------------------------------------------------------------------------------------------------------------
+  ID   |  Instruction Name                                                       |  Target Port                             
+------------------------------------------------------------------------------------------------------------------------
+  0    |  Gaussian                                                               |  Q0                                      
+------------------------------------------------------------------------------------------------------------------------
+  1    |  RaisedCos                                                              |  Q1                                      
+------------------------------------------------------------------------------------------------------------------------
+  2    |  Trigger                                                                |  [Q0, Q1]                                
+------------------------------------------------------------------------------------------------------------------------
+  3    |  Square                                                                 |  Q2                                      
+
+3. Declare Preset Gates
 ```python
 pt = PortTable()
 pt._add_muxes([(0, [0,1,2,3])])
@@ -66,7 +91,7 @@ backend.add_port_table(pt)
 backend.add_gate_table(gt)
 ```
 
-3. Run Circuit
+4. Run Circuit
 ```python
 cir = Circuit(backend)
 cir.icnot(0,1)
@@ -81,13 +106,13 @@ cir.cnot(1,3)
 cir.measurements([0,3])
 ```
 
-4. Plot waveforms
+5. Plot waveforms
 ```python
 cir.draw(reflect_skew=False)
 ```
 ![Pulse sequence](/figures/circuit.png)
 
-5. Declare and Update Variable
+6. Declare and Update Variable
 ```python
 from sequence_parser.variable import Variable, Variables
 
@@ -109,7 +134,7 @@ for update_command in var.update_command_list:
     seq.compile()
 ```
 
-6. Run Circuit with the Measurement tools
+7. Run Circuit with the Measurement tools
 ```python
 import measurement_tool as mt
 session = mt.Session(
@@ -127,7 +152,7 @@ circuits = [cir1, cir2, cir3, ...]
 dataset = qm.take_data(circuits)
 ```
 
-7. Dump and Load Circuit (setting can be saved in the Registry)
+8. Dump and Load Circuit (setting can be saved in the Registry)
 ```python
 setting = cir.dump_setting()
 new_cir = Circuit()
