@@ -23,7 +23,7 @@ from sequence_parser.backend import PortTable, GateTable, Backend
 from sequence_parser.instruction import *
 ```
 
-2. Load Preset Gates (these are processed when creating calibration_note in measurement_tools)
+2. Declare Preset Gates
 ```python
 pt = PortTable()
 pt._add_muxes([(0, [0,1,2,3])])
