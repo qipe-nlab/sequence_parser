@@ -98,13 +98,13 @@ var.add([v1, v2]) # zip sweep for v1 and v2
 var.add(v3)
 var.compile()
 
-cir = Circuit()
-cir.add(VirtualZ(phi=v2), q1)
-cir.add(Gaussian(amplitude=v1), q1)
-cir.add(FlatTop(Gaussian(amplitude=v3), top_duration=1000), q2)
+seq = Sequence()
+seq.add(VirtualZ(phi=v2), Port("Q1"))
+seq.add(Gaussian(amplitude=v1), Port("Q1"))
+seq.add(FlatTop(Gaussian(amplitude=v3), top_duration=1000), Port("Q2"))
 for update_command in var.update_command_list:
-    cir.update_variables(update_command)
-    cir.compile()
+    seq.update_variables(update_command)
+    seq.compile()
 ```
 
 6. Run Circuit with the Measurement tools
