@@ -35,6 +35,7 @@ instruction list included in seq can be visible with
 print(seq)
 ```
 then, you'll get as follows,
+```
                                                Sequence Instruction List                                                
 ------------------------------------------------------------------------------------------------------------------------
   ID   |  Instruction Name                                                       |  Target Port                             
@@ -46,6 +47,7 @@ then, you'll get as follows,
   2    |  Trigger                                                                |  [Q0, Q1]                                
 ------------------------------------------------------------------------------------------------------------------------
   3    |  Square                                                                 |  Q2                                      
+```
 
 3. Declare Preset Gates
 ```python
