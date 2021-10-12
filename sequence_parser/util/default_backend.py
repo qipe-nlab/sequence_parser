@@ -71,7 +71,7 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
 
         pump = Sequence()
         pump.add(Delay(duration=-10), impa)
-        pump.add(ShiftFrequency(detuning=pump_freq), impa)
+        pump.add(SetDetuning(pump_freq), impa)
         pump.add(FlatTop(Gaussian(amplitude=pump_amp, fwhm=10, duration=40), top_duration=55000), impa)
         pump.add(Delay(duration=-10), impa)
         gt._add_gate("pump", idx, pump)
