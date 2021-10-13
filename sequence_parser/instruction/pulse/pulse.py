@@ -2,10 +2,6 @@ import numpy as np
 from ..instruction import Instruction
 from .pulse_shape import SquareShape, GaussianShape, RaisedCosShape, DeriviativeShape, FlatTopShape
 
-def charp(time, envelope, frequency, phase):
-    phase_factor = np.exp(-1j*(2*np.pi*frequency*time + phase))
-    waveform = phase_factor*envelope
-    return waveform
 
 class Pulse(Instruction):
     def __init__(self):
@@ -38,14 +34,13 @@ class Pulse(Instruction):
 
     def _write(self, port):
         self._fix_pulseshape()
-        deposition_time = port.time - (self.position + 0.5*self.duration)
-        pulse_region = abs(deposition_time) < 0.5*self.duration
-        charp_time = port.time[pulse_region]
-        charp_envelope = self.pulse_shape.model_func(deposition_time[pulse_region])
-        charp_frequency = port.SIDEBAND_FREQ + self.detuning
-        charp_phase = self.phase
-        waveform = charp(charp_time, charp_envelope, charp_frequency, charp_phase)
-        port.waveform[pulse_region] += waveform
+        relative_time = port.time - (self.position + self.duration / 2)
+        support = (-self.duration / 2 <= relative_time) & (relative_time < self.duration / 2)
+        envelope = self.pulse_shape.model_func(relative_time[support])
+        if_freq = port.SIDEBAND_FREQ + self.detuning
+        phase_factor = np.exp(-1j * (2*np.pi * if_freq * port.time[support] + self.phase))
+        waveform = phase_factor * envelope
+        port.waveform[support] += waveform
 
 class Square(Pulse):
     def __init__(

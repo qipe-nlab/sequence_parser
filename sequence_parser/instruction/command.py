@@ -23,7 +23,7 @@ class VirtualZ(Command):
         phase = self.tmp_params["phase"]
         port.phase -= phase
 
-class ShiftFrequency(Command):
+class SetDetuning(Command):
     def __init__(self, detuning):
         super().__init__()
         self.params = {"detuning" : detuning}
@@ -32,11 +32,15 @@ class ShiftFrequency(Command):
         detuning = self.tmp_params["detuning"]
         port.detuning = detuning
 
-class SetAbsolutePhase(Command):
-    def __init__(self, phase):
+class ResetPhase(Command):
+    """Reset the accumulated phase.
+    The current time will be used as the phase origin for the following pulses.
+    """
+    def __init__(self, phase=0):
         super().__init__()
         self.params = {"phase" : phase}
 
     def _execute(self, port):
         phase = self.tmp_params["phase"]
-        port.phase = - phase - 2*np.pi*port.detuning*port.position
+        if_freq = port.SIDEBAND_FREQ + port.detuning
+        port.phase = - phase - 2*np.pi*if_freq*port.position

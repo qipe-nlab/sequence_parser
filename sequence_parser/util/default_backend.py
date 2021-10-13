@@ -1,11 +1,10 @@
 import numpy as np
 from ..sequence import Sequence
-from ..port import Port
 from ..backend import PortTable, GateTable, Backend
 from ..instruction import *
 
 def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualize=True):
-    
+
     pt = PortTable()
     pt._add_muxes(muxes)
     pt._add_edges(edges)
@@ -22,7 +21,7 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
             rx90.add(Gaussian(amplitude=arx90, fwhm=brx90, duration=2*brx90, zero_end=True), node.q)
             rx90.add(Deriviative(Gaussian(amplitude=1j*arx90*grx90, fwhm=brx90, duration=2*brx90, zero_end=True)), node.q)
         gt._add_gate("rx90", node.node, rx90)
-        
+
         rx180 = Sequence()
         rx180.add(Delay(duration=-brx90), node.q)
         with rx180.align(node.q, mode="left"):
@@ -30,7 +29,7 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
             rx180.add(Deriviative(Gaussian(amplitude=2j*arx90*grx90, fwhm=brx90, duration=4*brx90)), node.q)
         rx180.add(Delay(duration=-brx90), node.q)
         gt._add_gate("rx180", node.node, rx180)
-        
+
         if visualize:
             print(f"rx90 : {node.node}")
             rx90.draw()
@@ -41,19 +40,19 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
         pump_freq = impa_note.pump_frequency["GHz"]
         pump_dur = impa_note.pump_duration["ns"]
         pump_skew = impa_note.pump_skew["ns"]
-        
+
         impa.skew = -pump_skew
         pump = Sequence()
-        pump.add(ShiftFrequency(detuning=pump_freq), impa)
+        pump.add(SetDetuning(pump_freq), impa)
         pump.add(FlatTop(Gaussian(amplitude=pump_amp, fwhm=10, duration=40, zero_end=True), top_duration=pump_dur), impa)
         gt._add_gate("pump", idx, pump)
-        
+
         for node in nodes:
             qubit_note = qubit_notes[f"Q{node.node}"]
             dmeas = qubit_note.cavity_readout_trigger_delay["ns"]
             top_dur = qubit_note.single_length["ns"]
             ac_dur = np.where(np.sum(qubit_note.single_window, axis=0) != 0)[0][-1]*8
-            
+
             node.a = -dmeas
             meas = Sequence()
             meas.trigger([node.q, node.r, node.a])
@@ -110,9 +109,9 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
         if visualize:
             print(f"rzx90 : {idx}")
             rzx90.draw()
-        
+
     backend = Backend()
     backend.add_port_table(pt)
     backend.add_gate_table(gt)
-    
+
     return backend
