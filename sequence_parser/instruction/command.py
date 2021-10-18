@@ -42,5 +42,5 @@ class ResetPhase(Command):
 
     def _execute(self, port):
         phase = self.tmp_params["phase"]
-        if_freq = port.SIDEBAND_FREQ + port.detuning
+        if_freq = port.if_freq + port.detuning
         port.phase = - phase - 2*np.pi*if_freq*port.position
