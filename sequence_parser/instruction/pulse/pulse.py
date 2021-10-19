@@ -27,13 +27,13 @@ class Pulse(Instruction):
 
     def _execute(self, port):
         self._fix_duration()
+        self._fix_pulseshape()
         self.position = port.position
         self.phase = port.phase
         self.detuning = port.detuning
         port._time_step(self.duration)
 
     def _write(self, port):
-        self._fix_pulseshape()
         relative_time = port.time - (self.position + self.duration / 2)
         support = (-self.duration / 2 <= relative_time) & (relative_time < self.duration / 2)
         envelope = self.pulse_shape.model_func(relative_time[support])
