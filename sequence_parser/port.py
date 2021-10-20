@@ -151,7 +151,7 @@ class Port:
         self.waveform = np.zeros(self.time.size, dtype=np.complex128)
         for instruction in self.syncronized_instruction_list:
             if isinstance(instruction, Pulse):
-                instruction._write(self)
+                instruction._write(self, out=self.waveform)
             if isinstance(instruction, Acquire):
                 instruction._acquire(self)
             else:
