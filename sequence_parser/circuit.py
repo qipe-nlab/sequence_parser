@@ -182,11 +182,11 @@ class CircuitBase(Sequence):
         """
         self.gate("pump", target)
 
-    def draw(self, time_range=None, cancel_sideband=True, reflect_skew=False):
+    def draw(self, time_range=None, baseband=True, reflect_skew=False):
         """draw waveform saved in the Ports
         Args:
             time_range (tupple): time_range for plot written as (start, end)
-            cancel_sideband (bool): bool index to identify whether cancel or not the IF frequency for plot
+            baseband (bool): whether to plot at baseband or at port.if_freq
         """
         
         if reflect_skew is False:
@@ -224,8 +224,8 @@ class CircuitBase(Sequence):
             plt.axhline(0, color="black", linestyle="-")
             for measurement_window in port.measurement_windows:
                 plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
-            if cancel_sideband:
-                plot_waveform = np.exp(1j*(2*np.pi*port.SIDEBAND_FREQ*port.time))*port.waveform
+            if baseband:
+                plot_waveform = np.exp(1j*(2*np.pi*port.if_freq*port.time))*port.waveform
             else:
                 plot_waveform = port.waveform
             plt.step(port.time, plot_waveform.real)

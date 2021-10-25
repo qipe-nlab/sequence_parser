@@ -229,12 +229,12 @@ class Sequence:
 
         self.flag["compiled"] = True
 
-    def draw(self, port_name_list=None, time_range=None, cancel_sideband=True):
+    def draw(self, port_name_list=None, time_range=None, baseband=True):
         """draw waveform saved in the Ports
         Args:
             port_name_list (list): List of the port_name to plot waveform
             time_range (tupple): time_range for plot written as (start, end)
-            cancel_sideband (bool): bool index to identify whether cancel or not the IF frequency for plot
+            baseband (bool): whether to plot at baseband or at port.if_freq
         """
 
         if not self.flag["compiled"]:
@@ -259,8 +259,8 @@ class Sequence:
             plt.axhline(0, color="black", linestyle="-")
             for measurement_window in port.measurement_windows:
                 plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
-            if cancel_sideband:
-                plot_waveform = np.exp(1j*(2*np.pi*port.SIDEBAND_FREQ*port.time))*port.waveform
+            if baseband:
+                plot_waveform = np.exp(1j*(2*np.pi*port.if_freq*port.time))*port.waveform
             else:
                 plot_waveform = port.waveform
             plt.step(port.time, plot_waveform.real)
