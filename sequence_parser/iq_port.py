@@ -1,4 +1,5 @@
 import copy
+from typing import Callable
 
 import numpy as np
 
@@ -10,23 +11,27 @@ from .port import Port
 class IQPort(Port):
     """A Port which compensates for the amplitude and delay imbalances of an IQ mixer"""
 
-    def __init__(self, name, if_freq=0.25,
-        i_factor=lambda freq: 1, q_factor=lambda freq: 1,
-        i_delay=lambda freq: 0, q_delay=lambda freq: 0
-    ):
-        """initial setting of the Port
-        Args:
-            name (str): port name
-            if_freq (float [GHz]): IF frequency
-            i_factor (freq [GHz] -> float): multiply I by this factor
-            q_factor (freq [GHz] -> float): multiply Q by this factor
-            i_delay (freq [GHz] -> float [ns]): delay I by this much
-            q_delay (freq [GHz] -> float [ns]): delay Q by this much
-        """
-        super().__init__(name, if_freq)
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.i_factor = lambda freq: 1
+        self.q_factor = lambda freq: 1
+        self.i_delay = lambda freq: 0
+        self.q_delay = lambda freq: 0
+
+    def set_i_factor(self, i_factor: Callable[[float], float]):
+        """multiply I waveform by `i_factor(if_freq)`"""
         self.i_factor = i_factor
+
+    def set_q_factor(self, q_factor: Callable[[float], float]):
+        """multiply Q waveform by `q_factor(if_freq)`"""
         self.q_factor = q_factor
+
+    def set_i_delay(self, i_delay: Callable[[float], float]):
+        """delay I waveform by `i_delay(if_freq)` ns"""
         self.i_delay = i_delay
+
+    def set_q_delay(self, q_delay: Callable[[float], float]):
+        """delay Q waveform by `q_delay(if_freq)` ns"""
         self.q_delay = q_delay
 
     def _write_waveform(self, waveform_length):
