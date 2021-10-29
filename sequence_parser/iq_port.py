@@ -50,19 +50,8 @@ class IQPort(Port):
                 q_factor = self.q_factor(if_freq)
                 i_delay = self.i_delay(if_freq)
                 q_delay = self.q_delay(if_freq)
-
-                # compensate and write the I waveform
-                i_pulse = copy.deepcopy(instruction)
-                i_pulse.pulse_shape.amplitude *= i_factor
-                i_pulse.position += i_delay
-                i_pulse._write(self, out=i_waveform)
-
-                # compensate and write the Q waveform
-                q_pulse = copy.deepcopy(instruction)
-                q_pulse.pulse_shape.amplitude *= q_factor
-                q_pulse.position += q_delay
-                q_pulse._write(self, out=q_waveform)
-
+                instruction._write(self, out=i_waveform, delay=i_delay, factor=i_factor)
+                instruction._write(self, out=q_waveform, delay=q_delay, factor=q_factor)
             elif isinstance(instruction, Acquire):
                 instruction._acquire(self)
 

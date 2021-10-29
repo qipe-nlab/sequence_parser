@@ -33,13 +33,14 @@ class Pulse(Instruction):
         self.detuning = port.detuning
         port._time_step(self.duration)
 
-    def _write(self, port, out: np.ndarray):
-        relative_time = port.time - (self.position + self.duration / 2)
+    def _write(self, port, out: np.ndarray, delay: float = 0, factor: float = 1):
+        time = port.time - delay
+        relative_time = time - (self.position + self.duration / 2)
         support = (-self.duration / 2 <= relative_time) & (relative_time < self.duration / 2)
         envelope = self.pulse_shape.model_func(relative_time[support])
         if_freq = port.if_freq + self.detuning
-        phase_factor = np.exp(-1j * (2*np.pi * if_freq * port.time[support] + self.phase))
-        waveform = phase_factor * envelope
+        phase_factor = np.exp(-1j * (2*np.pi * if_freq * time[support] + self.phase))
+        waveform = factor * envelope * phase_factor
         out[support] += waveform
 
 class Square(Pulse):
