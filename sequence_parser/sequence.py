@@ -7,6 +7,7 @@ from .instruction.instruction import Instruction
 from .instruction.trigger import Trigger
 from .instruction.command import Delay
 from .instruction.align import _AlignManager
+from .stochastic import StochasticSequence
 from .util.topological_sort import weighted_topological_sort
 
 plt.rcParams['ytick.minor.visible'] = False
@@ -80,7 +81,6 @@ class Sequence:
         """
         if not isinstance(variable, Variable):
             raise Exception(f"{variable} is not Variable object")
-
         if variable.name not in self.variable_dict.keys():
             self.variable_dict[variable.name] = []
         self.variable_dict[variable.name].append(variable)
@@ -129,6 +129,9 @@ class Sequence:
         Args:
             sequence (Sequence): sequence
         """
+        if isinstance(sequence, StochasticSequence):
+            sequence = sequence._fix_sequence()
+
         for instruction, port in sequence.instruction_list:
             if isinstance(instruction, Trigger):
                 self.trigger(port, align=instruction.align)
