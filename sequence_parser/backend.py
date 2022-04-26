@@ -136,25 +136,16 @@ class Backend:
     def add_gate_table(self, gate_table):
         self.gate_table = gate_table
     
-#     def dump_setting(self):
-#         setting = {
-#             "calib_note" : self.calib_note.dump_setting(),
-#             "instrument" : self.instrument.dump_setting(),
-#             "port_table" : self.port_table.dump_setting(),
-#             "gate_table" : self.gate_table.dump_setting(),
-#         }
-#         return setting
-        
-#     def load_setting(self, setting):
-#         import measurement_tool as mt
-        
-#         self.calib_note = Calibration_note()
-#         calib_note.load_setting(setting["calib_note"])
-        
-#         self.instrument = 
-        
-#         self.port_table = PortTable()
-#         port_table.load_setting(setting["port_table"])
-        
-#         self.gate_table = GateTable()
-#         gate_table.load_setting(setting["gate_table"])
+    def dump_setting(self):
+        setting = {
+            "port_table": self.port_table.dump_setting() if self.port_table else None,
+            "gate_table": self.gate_table.dump_setting() if self.gate_table else None,
+        }
+        return setting
+
+    def load_setting(self, setting):
+        self.port_table = PortTable()
+        self.port_table.load_setting(setting["port_table"])
+
+        self.gate_table = GateTable()
+        self.gate_table.load_setting(setting["gate_table"])
