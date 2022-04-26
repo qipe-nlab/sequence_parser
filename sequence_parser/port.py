@@ -16,7 +16,8 @@ class Port:
             if_freq (float): IF frequency in GHz
         """
         self.name = name
-        self.if_freq = if_freq
+        self.if_freq = if_freq # GHz
+        self.DAC_STEP = 1.0 # ns
         self.skew = 0.0 # ns
         self.skew_delay = 0.0 # ns
         self._reset()
@@ -32,7 +33,6 @@ class Port:
         """
         self.instruction_list = []
         self.syncronized_instruction_list = None
-        self.DAC_STEP = 1.0 # ns
         self.waveform = None
         self.measurement_windows = []
         self._execute_reset()
