@@ -178,7 +178,3 @@ setting = cir.dump_setting()
 new_cir = Circuit()
 new_cir.load_setting(setting)
 ```
-
-## To Do List
-- Add feature to get the summention of the several ports
-- Add feature to execute "charp" as a instruction
