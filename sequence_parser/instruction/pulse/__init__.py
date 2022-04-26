@@ -1,1 +1,1 @@
-from .pulse import Pulse, Square, Gaussian, RaisedCos, FlatTop, Deriviative
+from .pulse import Pulse, Square, Step, Gaussian, RaisedCos, HyperbolicSecant, FlatTop, Deriviative, Product

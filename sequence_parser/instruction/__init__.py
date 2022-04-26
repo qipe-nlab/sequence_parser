@@ -1,4 +1,4 @@
-from .pulse import Square, Gaussian, RaisedCos, FlatTop, Deriviative
+from .pulse import Square, Step, Gaussian, RaisedCos, HyperbolicSecant, FlatTop, Deriviative, Product
 from .command import VirtualZ, Delay, SetDetuning, ResetPhase
 from .acquire import Acquire
 from .trigger import Trigger

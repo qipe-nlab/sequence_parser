@@ -1,7 +1,6 @@
 import numpy as np
 from ..instruction import Instruction
-from .pulse_shape import SquareShape, GaussianShape, RaisedCosShape, DeriviativeShape, FlatTopShape
-
+from .pulse_shape import SquareShape, StepShape, GaussianShape, RaisedCosShape, HyperbolicSecantShape, DeriviativeShape, FlatTopShape, ProductShape
 
 class Pulse(Instruction):
     def __init__(self):
@@ -59,6 +58,24 @@ class Square(Pulse):
     def _get_duration(self):
         self.duration = self.tmp_params["duration"]
 
+class Step(Pulse):
+    def __init__(
+        self,
+        amplitude = 1,
+        edge = 20,
+        duration = 100,
+    ):
+        super().__init__()
+        self.pulse_shape = StepShape()
+        self.params = {
+            "amplitude" : amplitude,
+            "edge" : edge,
+            "duration" : duration
+        }
+
+    def _get_duration(self):
+        self.duration = self.tmp_params["duration"]
+
 class Gaussian(Pulse):
     def __init__(
         self,
@@ -95,6 +112,26 @@ class RaisedCos(Pulse):
     def _get_duration(self):
         self.duration = self.tmp_params["duration"]
 
+class HyperbolicSecant(Pulse):
+    def __init__(
+        self,
+        amplitude = 1,
+        duration = 100,
+        fwhm = 30,
+        zero_end = False,
+    ):
+        super().__init__()
+        self.pulse_shape = HyperbolicSecantShape()
+        self.params = {
+            "amplitude" : amplitude,
+            "fwhm" : fwhm,
+            "duration" : duration,
+            "zero_end" : zero_end
+        }
+        
+    def _get_duration(self):
+        self.duration = self.tmp_params["duration"]
+
 class Deriviative(Pulse):
     def __init__(
         self,
@@ -121,3 +158,17 @@ class FlatTop(Pulse):
 
     def _get_duration(self):
         self.duration = self.tmp_params["top_duration"] + self.insts[0].duration
+
+class Product(Pulse):
+    def __init__(
+        self,
+        pulse_a,
+        pulse_p,
+    ):
+        super().__init__()
+        self.pulse_shape = ProductShape()
+        self.params = {}
+        self.insts = {0:pulse_a, 1:pulse_p}
+        
+    def _get_duration(self):
+        self.duration = max(self.insts[0].duration, self.insts[1].duration)
