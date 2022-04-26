@@ -7,7 +7,7 @@ from .instruction.instruction import Instruction
 from .instruction.trigger import Trigger
 from .instruction.command import Delay
 from .instruction.align import _AlignManager
-from .stochastic import StochasticSequence
+from .stochastic_sequence import StochasticSequence
 from .util.topological_sort import weighted_topological_sort
 
 plt.rcParams['ytick.minor.visible'] = False
