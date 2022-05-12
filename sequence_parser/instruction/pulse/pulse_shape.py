@@ -107,6 +107,23 @@ class FlatTopShape(PulseShape):
         waveform = np.hstack([fwaveform, mwaveform, bwaveform])
         return waveform
 
+class CRABShape(PulseShape):
+    def __init__(self):
+        super().__init__()
+        
+    def set_params(self, pulse):
+        self.envelope_shape = copy.deepcopy(pulse.insts[0].pulse_shape)
+        self.coefficients = pulse.coefficients
+        self.polynominals = pulse.polynominals
+        
+    def model_func(self, time):
+        envelope = self.envelope_shape.model_func(time)
+        distortion = 0j
+        for coeff, func in zip(self.coefficients, self.polynominals):
+            distortion += coeff*func(time/max(abs(time)))
+        waveform = distortion * envelope
+        return waveform
+
 class DeriviativeShape(PulseShape):
     def __init__(self):
         super().__init__()

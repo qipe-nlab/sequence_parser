@@ -1,6 +1,6 @@
 import numpy as np
 from ..instruction import Instruction
-from .pulse_shape import SquareShape, StepShape, GaussianShape, RaisedCosShape, HyperbolicSecantShape, DeriviativeShape, FlatTopShape, ProductShape
+from .pulse_shape import *
 
 class Pulse(Instruction):
     def __init__(self):
@@ -158,6 +158,23 @@ class FlatTop(Pulse):
 
     def _get_duration(self):
         self.duration = self.tmp_params["top_duration"] + self.insts[0].duration
+
+class CRAB(Pulse):
+    def __init__(
+        self,
+        envelope,
+        coefficients,
+        polynominals,
+    ):
+        super().__init__()
+        self.pulse_shape = CRABShape()
+        self.params = {}
+        self.insts = {0:envelope}
+        self.coefficients = coefficients
+        self.polynominals = polynominals
+        
+    def _get_duration(self):
+        self.duration = self.insts[0].duration        
 
 class Product(Pulse):
     def __init__(
