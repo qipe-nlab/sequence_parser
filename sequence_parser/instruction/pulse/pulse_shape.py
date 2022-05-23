@@ -148,3 +148,23 @@ class ProductShape(PulseShape):
         waveform_p = self.pulseshape_p.model_func(time)
         waveform = waveform_a * np.exp(1j*np.pi*waveform_p)
         return waveform
+
+
+class PolynomialRaisedCosShape(PulseShape):
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.amplitude = pulse.tmp_params["amplitude"]
+        self.coeffs = pulse.tmp_params["coefficients"]
+        self.duration = pulse.duration
+
+    def model_func(self, time):
+        a = 0
+        for key in self.coeffs:
+            istr = copy.deepcopy(key)
+            i = istr.replace('c', '')
+            a += self.coeffs[key] * (time)**int(i)
+
+        return np.cos(
+            np.pi * time / self.duration)**2 * self.amplitude * a 

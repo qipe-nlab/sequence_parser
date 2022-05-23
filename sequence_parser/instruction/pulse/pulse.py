@@ -189,3 +189,21 @@ class Product(Pulse):
         
     def _get_duration(self):
         self.duration = max(self.insts[0].duration, self.insts[1].duration)
+
+class PolynomialRaisedCos(Pulse):
+    def __init__(
+        self,
+        amplitude = 1,
+        coefficients = {"c0" : 1},
+        duration = 100,
+    ):
+        super().__init__()
+        self.pulse_shape = PolynomialRaisedCosShape()
+        self.params = {
+            "amplitude" : amplitude,
+            "coefficients" : coefficients,
+            "duration" : duration
+        }
+        
+    def _get_duration(self):
+        self.duration = self.tmp_params["duration"]
