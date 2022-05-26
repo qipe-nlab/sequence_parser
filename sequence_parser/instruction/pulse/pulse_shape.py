@@ -89,6 +89,19 @@ class HyperbolicSecantShape(PulseShape):
         if self.amplitude == 0:
             waveform = 0*time
         return waveform
+    
+class HalfDRAGShape(PulseShape):
+    def __init__(self):
+        super().__init__()
+
+    def set_params(self, pulse):
+        self.pulseshape = copy.deepcopy(pulse.insts[0].pulse_shape)
+        self.beta = pulse.tmp_params["beta"]
+
+    def model_func(self, time):
+        tmp = self.pulseshape.model_func(time)
+        waveform = tmp - 1j*self.beta*np.gradient(tmp)/np.gradient(time)
+        return waveform
 
 class FlatTopShape(PulseShape):
     def __init__(self):
@@ -147,4 +160,4 @@ class ProductShape(PulseShape):
         waveform_a = self.pulseshape_a.model_func(time)
         waveform_p = self.pulseshape_p.model_func(time)
         waveform = waveform_a * np.exp(1j*np.pi*waveform_p)
-        return waveform
+        return waveform 

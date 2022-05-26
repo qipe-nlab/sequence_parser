@@ -35,7 +35,9 @@ class Pulse(Instruction):
     def _write(self, port, out: np.ndarray, delay: float = 0, factor: float = 1):
         time = port.time - delay
         relative_time = time - (self.position + self.duration / 2)
-        support = (-self.duration / 2 <= relative_time) & (relative_time < self.duration / 2)
+        flag_above = relative_time + self.duration/2 >= -0.5*port.DAC_STEP
+        flag_below = relative_time - self.duration/2 <  -0.5*port.DAC_STEP
+        support = flag_above & flag_below
         envelope = self.pulse_shape.model_func(relative_time[support])
         if_freq = port.if_freq + self.detuning
         phase_factor = np.exp(-1j * (2*np.pi * if_freq * time[support] + self.phase))
@@ -131,6 +133,20 @@ class HyperbolicSecant(Pulse):
         
     def _get_duration(self):
         self.duration = self.tmp_params["duration"]
+        
+class HalfDRAG(Pulse):
+    def __init__(
+        self,
+        pulse,
+        beta
+    ):
+        super().__init__()
+        self.pulse_shape = HalfDRAGShape()
+        self.params = {"beta":beta}
+        self.insts = {0 : pulse}
+
+    def _get_duration(self):
+        self.duration = self.insts[0].duration
 
 class Deriviative(Pulse):
     def __init__(
@@ -188,4 +204,4 @@ class Product(Pulse):
         self.insts = {0:pulse_a, 1:pulse_p}
         
     def _get_duration(self):
-        self.duration = max(self.insts[0].duration, self.insts[1].duration)
+        self.duration = max(self.insts[0].duration, self.insts[1].duration) 

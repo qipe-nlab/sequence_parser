@@ -149,6 +149,7 @@ class Port:
         """
         self.time = np.arange(0, waveform_length, self.DAC_STEP)
         self.waveform = np.zeros(self.time.size, dtype=np.complex128)
+        
         for instruction in self.syncronized_instruction_list:
             if isinstance(instruction, Pulse):
                 instruction._write(self, out=self.waveform)
@@ -156,3 +157,6 @@ class Port:
                 instruction._acquire(self)
             else:
                 pass
+            
+        if np.max(np.abs(self.waveform)) > 1.001:
+            print(f'sequence amplitude should be below 1 (Port : {self.name}).')
