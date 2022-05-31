@@ -204,9 +204,6 @@ class Product(Pulse):
         self.insts = {0:pulse_a, 1:pulse_p}
         
     def _get_duration(self):
-<<<<<<< HEAD
-        self.duration = max(self.insts[0].duration, self.insts[1].duration) 
-=======
         self.duration = max(self.insts[0].duration, self.insts[1].duration)
 
 class PolynomialRaisedCos(Pulse):
@@ -226,4 +223,3 @@ class PolynomialRaisedCos(Pulse):
         
     def _get_duration(self):
         self.duration = self.tmp_params["duration"]
->>>>>>> 1089aee357d400c2c9568139c2badeb4fcd77560

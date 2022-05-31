@@ -202,15 +202,23 @@ class CircuitBase(Sequence):
         if self.port_table is None:
             plot_port_list = self.port_list
         else:
+#             plot_port_list = []
+#             plot_port_list += [self._verify_port(node.q) for node in self.port_table.nodes.values()]
+#             plot_port_list += [self._verify_port(node)   for node in self.port_table.edges.values()]
+#             for (impa, nodes) in self.port_table.muxes.values():
+#                 for node in nodes:
+#                     rport = self._verify_port(node.r)
+#                     aport = self._verify_port(node.a)
+#                     rport.measurement_windows = aport.measurement_windows
+#                     plot_port_list.append(rport)
+#                 plot_port_list.append(self._verify_port(impa))
             plot_port_list = []
             plot_port_list += [self._verify_port(node.q) for node in self.port_table.nodes.values()]
             plot_port_list += [self._verify_port(node)   for node in self.port_table.edges.values()]
+            plot_port_list += [self._verify_port(node.r) for node in self.port_table.nodes.values()]
+            for node in self.port_table.nodes.values():
+                self._verify_port(node.r).measurement_windows = self._verify_port(node.a).measurement_windows
             for (impa, nodes) in self.port_table.muxes.values():
-                for node in nodes:
-                    rport = self._verify_port(node.r)
-                    aport = self._verify_port(node.a)
-                    rport.measurement_windows = aport.measurement_windows
-                    plot_port_list.append(rport)
                 plot_port_list.append(self._verify_port(impa))
         
         if time_range is None:

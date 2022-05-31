@@ -113,7 +113,7 @@ class FlatTopShape(PulseShape):
 
     def model_func(self, time):
         ftime = time[np.where(time <= -0.5*self.top_duration)] + 0.5*self.top_duration
-        btime = time[np.where(time >= +0.5*self.top_duration)] - 0.5*self.top_duration
+        btime = time[np.where(time > +0.5*self.top_duration)] - 0.5*self.top_duration
         fwaveform = self.pulseshape.model_func(ftime)
         bwaveform = self.pulseshape.model_func(btime)
         mwaveform = self.pulseshape.amplitude*np.ones(time.size - ftime.size - btime.size)
