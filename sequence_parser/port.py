@@ -9,7 +9,7 @@ from .instruction.functional import Container
 class Port:
     """Port management class for timedomain measurement"""
 
-    def __init__(self, name, if_freq=0.25, max_amp=1.001):
+    def __init__(self, name, if_freq=0.25, max_amp=1):
         """initial setting of the Port
         Args:
             name (str): port name
@@ -159,5 +159,5 @@ class Port:
             else:
                 pass
             
-        if np.max(np.abs(self.waveform)) > self.max_amp:
+        if np.max(np.abs(self.waveform)) > np.nextafter(self.max_amp, np.inf):
             print(f'sequence amplitude should be below {self.max_amp} (Port : {self.name}).')
