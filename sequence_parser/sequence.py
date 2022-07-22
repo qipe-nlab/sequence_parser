@@ -26,10 +26,12 @@ plt.rcParams['axes.linewidth']      = 1.0
 class Sequence:
     """Pulse sequence management class for timedomain measurement"""
 
-    def __init__(self):
+    def __init__(self, port_list=None):
         """Initialize the internal setting
         """
         self._reset()
+        if port_list is not None:
+            self.port_list = port_list
 
     def __repr__(self):
         lineA = 6
