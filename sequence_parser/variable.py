@@ -18,10 +18,14 @@ class Variable:
         self.value = self.value_array[idx]
 
 class Variables:
-    def __init__(self):
+    def __init__(self, variable_list=None):
         self.variable_list = []
         self.variable_name_list = []
         self.variable_size_list = []
+        if variable_list is not None:
+            for variable in variable_list:
+                self.add(variable)
+            self.compile()
 
     def add(self, variable):
         """Add new variable into self.variable_list
