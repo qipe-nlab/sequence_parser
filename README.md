@@ -180,7 +180,7 @@ new_cir.load_setting(setting)
 ```
 
 ## Citation
-No obligation. Use it as needed.
+No obligation. Use the following as needed.
 ```
 @Misc{SequenceParser,
   author = {Heya, Kentaro and Sunada, Yoshiki and Watanabe Shu},
