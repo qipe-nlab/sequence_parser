@@ -84,6 +84,36 @@ class CircuitBase(Sequence):
         instruction = self._verify_instruction(instruction)
         port = self._verify_port(self.port_table.nodes[target].a)
         self.instruction_list.append((instruction, port))
+    
+    def qdetuning(self, target, detuning):
+        """Set detuning
+        Args:
+            detuning (float): detuning
+        """
+        
+        if isinstance(target, int):
+            port = self.port_table.nodes[target].q
+        elif isinstance(target, tuple):
+            port = self.port_table.edges[target]
+        else:
+            raise
+        port = self._verify_port(port)
+        
+        return _DetuningManager(self, port, detuning)
+    
+    def rdetuning(self, target, detuning):
+        """Set detuning
+        Args:
+            detuning (float): detuning
+        """
+        
+        if isinstance(target, int):
+            port = self.port_table.nodes[target].r
+        else:
+            raise
+        port = self._verify_port(port)
+        
+        return _DetuningManager(self, port, detuning)
 
     def qtrigger(self, qubits, align="left"):
         """Add Trigger into the instruction_list
@@ -120,8 +150,8 @@ class CircuitBase(Sequence):
         gate = self.gate_table.get_gate(key, index)
         self.call(gate)
         
-    def qwait(self, time, target):
-        """Execute a wait gate with given angle
+    def qdelay(self, time, target):
+        """Execute a delay with given angle
         Args:
             time (float) : wait time [ns]
             target (int): index of the target qubit port

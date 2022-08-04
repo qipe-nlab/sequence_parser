@@ -120,9 +120,18 @@ class Sequence:
     def align(self, port, mode):
         """Change align mode
         Args:
+            port (Port): target port
             mode (string): "left" or "sequential"
         """
         return _AlignManager(self, port, mode)
+    
+    def detuning(self, port, detuning):
+        """Set detuning
+        Args:
+            port (Port): target port
+            detuning (float): detuning
+        """
+        return _DetuningManager(self, port, detuning)
 
     def call(self, sequence):
         """Combine the instruction_list with the other sequence
