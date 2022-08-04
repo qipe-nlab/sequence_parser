@@ -1,4 +1,4 @@
-import copy
+from copy import deepcopy
 import numpy as np
 import matplotlib.pyplot as plt
 from .port import Port
@@ -71,7 +71,7 @@ class Sequence:
         for tmp in self.port_list:
             if port.name == tmp.name:
                 return tmp
-        new_port = copy.deepcopy(port)
+        new_port = deepcopy(port)
         new_port._reset()
         self.port_list.append(new_port)
         return new_port
@@ -87,27 +87,28 @@ class Sequence:
             self.variable_dict[variable.name] = []
         self.variable_dict[variable.name].append(variable)
 
-    def _verify_instruction(self, instruction):
+    def _verify_instruction(self, instruction, copy=True):
         """Verify new instruction
         Args:
             instruction (Instruction): Pulse, Command, or Trigger
         """
         if not isinstance(instruction, Instruction):
             raise Exception(f"{instruction} is not Instruction object")
-        instruction = copy.deepcopy(instruction)
+        if copy:
+            instruction = deepcopy(instruction)
         instruction._get_variable()
         for variable in instruction.variables:
             self._verify_variable(variable)
         return instruction
 
-    def add(self, instruction, port):
+    def add(self, instruction, port, copy=True):
         """Add Instruction into the instruction_list
         Args:
             instruction (Instruction): Pulse, Command, or Trigger
             port (Port): control port for qubit drive, cavity drive, cross resonance, or impa pump
         """
         port = self._verify_port(port)
-        instruction = self._verify_instruction(instruction)
+        instruction = self._verify_instruction(instruction, copy)
         self.instruction_list.append((instruction, port))
 
     def trigger(self, port_list, align="left"):
