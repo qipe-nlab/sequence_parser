@@ -178,3 +178,15 @@ setting = cir.dump_setting()
 new_cir = Circuit()
 new_cir.load_setting(setting)
 ```
+
+## Citation
+No obligation. Use the following as needed.
+```
+@Misc{SequenceParser,
+  author = {Heya, Kentaro and Sunada, Yoshiki and Watanabe Shu},
+  title = {{Sequence Parser}: A pulse sequencer for quantum engineering},
+  year = {2021--},
+  url = "https://github.com/qipe-nlab/sequence_parser",
+  note = {[Online; accessed <today>]}
+}
+```
