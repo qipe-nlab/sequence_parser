@@ -17,9 +17,6 @@ class Variable:
     def _set_value(self, idx):
         self.value = self.value_array[idx]
 
-    def get_value(self, update_command: dict):
-        return self.value_array[update_command[self.name]]
-
 
 class Variables:
     def __init__(self, variable_list=None):
