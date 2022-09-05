@@ -90,6 +90,26 @@ def cos_twist_minus(params, duration, time):
     waveform = amplitude*np.exp(-1j*phase)
     return waveform
 
+def raised_cos_flattop(params, duration, time):
+    amplitude, edge = params
+    top = duration - 2*edge
+    detuning = np.pi/(top + edge)
+
+    ftime = time[time < -0.5*top] + 0.5*top
+    ctime = time[abs(time) <= 0.5*top] + 0.5*top
+    btime = time[time > +0.5*top] - 0.5*top
+
+    ftheta = np.pi/edge*ftime
+    btheta = np.pi/edge*btime
+
+    fphase = 0.5*edge/(top+edge)*(ftheta + np.pi + np.sin(ftheta))
+    cphase = 0.5*edge/(top+edge)*np.pi + ctime * detuning
+    bphase = top * detuning + 0.5*edge/(top+edge)*(btheta + np.pi + np.sin(btheta))
+
+    phase = np.hstack([fphase, cphase, bphase])
+    waveform = amplitude * np.exp(+1j*phase)
+    return waveform
+
 def raised_cos_flattop_minus(params, duration, time):
     amplitude, edge = params
     top = duration - 2*edge

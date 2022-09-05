@@ -44,15 +44,3 @@ class ResetPhase(Command):
         phase = self.tmp_params["phase"]
         if_freq = port.if_freq + port.detuning
         port.phase = - phase - 2*np.pi*if_freq*port.position
-
-class ResetPhase2(Command):
-    """Reset the accumulated phase.
-    The current time will be used as the phase origin for the following pulses.
-    """
-    def __init__(self, phase=0):
-        super().__init__()
-        self.params = {"phase" : phase}
-
-    def _execute(self, port):
-        phase = self.tmp_params["phase"]
-        port.phase = - phase - 2*np.pi*port.detuning*port.position
