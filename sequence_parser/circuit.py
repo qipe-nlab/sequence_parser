@@ -8,19 +8,7 @@ from .instruction.acquire import Acquire
 from .instruction.align import _AlignManager
 from .util.decompose import matrix_to_su2, matrix_to_su4
 from sequence_parser.instruction import acquire
-
-plt.rcParams['ytick.minor.visible'] = False
-plt.rcParams['xtick.top']           = True
-plt.rcParams['ytick.right']         = True
-plt.rcParams['ytick.minor.visible'] = False
-plt.rcParams['xtick.direction']     = 'in'
-plt.rcParams['ytick.direction']     = 'in'
-plt.rcParams['font.family']         = 'arial'
-plt.rcParams["mathtext.fontset"]    = 'stixsans'
-plt.rcParams['xtick.major.width']   = 0.5
-plt.rcParams['ytick.major.width']   = 0.5
-plt.rcParams['font.size']           = 16
-plt.rcParams['axes.linewidth']      = 1.0
+from .sequence import sequencer_rc_context
 
 class CircuitBase(Sequence):
     def __init__(self, backend):
@@ -212,7 +200,7 @@ class CircuitBase(Sequence):
         """
         self.gate("pump", target)
 
-    def draw(self, time_range=None, baseband=True, reflect_skew=False):
+    def draw(self, time_range=None, baseband=True, reflect_skew=False, auto_yscale=False):
         """draw waveform saved in the Ports
         Args:
             time_range (tupple): time_range for plot written as (start, end)
@@ -256,35 +244,42 @@ class CircuitBase(Sequence):
         else:
             plot_time_range = time_range
 
-        plt.figure(figsize=(20,1.5*len(plot_port_list)))
-        for i, port in enumerate(plot_port_list):
-            plt.subplot(len(plot_port_list), 1, i+1)
-            plt.axhline(0, color="black", linestyle="-")
-            for measurement_window in port.measurement_windows:
-                plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
-            if baseband:
-                plot_waveform = np.exp(1j*(2*np.pi*port.if_freq*port.time))*port.waveform
-            else:
-                plot_waveform = port.waveform
-            plt.step(port.time, plot_waveform.real)
-            plt.step(port.time, plot_waveform.imag)
-            plt.fill_between(port.time, plot_waveform.real, step="pre", alpha=0.4)
-            plt.fill_between(port.time, plot_waveform.imag, step="pre", alpha=0.4)
-            for trigger_index, _ in port.trigger_node_list:
-                position = self.trigger_position_list[trigger_index]
-                plt.axvline(position, color="red", linestyle="--")
-                if plot_time_range[0] <= position <= plot_time_range[1]:
-                    plt.text(x=position, y=-1, s=trigger_index, color="red", fontsize=12)
-            plt.text(x=plot_time_range[0], y=-0, s=port.name,fontsize=18)
-            plt.ylim(-1,1)
-            plt.xlim(plot_time_range[0], plot_time_range[1])
-            plt.grid()
-            plt.ylabel("Amplitude")
-            plt.tick_params(labelbottom=False)
-        plt.tight_layout()
-        plt.tick_params(labelbottom=True)
-        plt.xlabel("Time (ns)")
-        plt.show()
+        with plt.rc_context(sequencer_rc_context):
+            plt.figure(figsize=(20,1.5*len(plot_port_list)))
+            for i, port in enumerate(plot_port_list):
+                plt.subplot(len(plot_port_list), 1, i+1)
+                plt.axhline(0, color="black", linestyle="-")
+                for measurement_window in port.measurement_windows:
+                    plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
+                if baseband:
+                    plot_waveform = np.exp(1j*(2*np.pi*port.if_freq*port.time))*port.waveform
+                else:
+                    plot_waveform = port.waveform
+                plt.step(port.time, plot_waveform.real)
+                plt.step(port.time, plot_waveform.imag)
+                plt.fill_between(port.time, plot_waveform.real, step="pre", alpha=0.4)
+                plt.fill_between(port.time, plot_waveform.imag, step="pre", alpha=0.4)
+                if auto_yscale:
+                    yabs_max = np.max(np.abs(plt.ylim()))
+                    plt.ylim(-yabs_max, yabs_max)
+                    ymin = -yabs_max
+                else:
+                    plt.ylim(-1, 1)
+                    ymin = -1
+                for trigger_index, _ in port.trigger_node_list:
+                    position = self.trigger_position_list[trigger_index]
+                    plt.axvline(position, color="red", linestyle="--")
+                    if plot_time_range[0] <= position <= plot_time_range[1]:
+                        plt.text(x=position, y=ymin, s=trigger_index, color="red", fontsize=12)
+                plt.text(x=plot_time_range[0], y=-0, s=port.name,fontsize=18)
+                plt.xlim(plot_time_range[0], plot_time_range[1])
+                plt.grid()
+                plt.ylabel("Amplitude")
+                plt.tick_params(labelbottom=False)
+            plt.tight_layout()
+            plt.tick_params(labelbottom=True)
+            plt.xlabel("Time (ns)")
+            plt.show()
         
         if reflect_skew is False:
             for port, skew in zip(all_ports, skew_list):

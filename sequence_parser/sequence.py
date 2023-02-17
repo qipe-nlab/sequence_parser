@@ -10,18 +10,20 @@ from .instruction.align import _AlignManager
 from .stochastic_sequence import StochasticSequence
 from .util.topological_sort import weighted_topological_sort
 
-plt.rcParams['ytick.minor.visible'] = False
-plt.rcParams['xtick.top']           = True
-plt.rcParams['ytick.right']         = True
-plt.rcParams['ytick.minor.visible'] = False
-plt.rcParams['xtick.direction']     = 'in'
-plt.rcParams['ytick.direction']     = 'in'
-plt.rcParams['font.family']         = 'arial'
-plt.rcParams["mathtext.fontset"]    = 'stixsans'
-plt.rcParams['xtick.major.width']   = 0.5
-plt.rcParams['ytick.major.width']   = 0.5
-plt.rcParams['font.size']           = 16
-plt.rcParams['axes.linewidth']      = 1.0
+sequencer_rc_context = {
+    'ytick.minor.visible': False,
+    'xtick.top': True,
+    'ytick.right': True,
+    'ytick.minor.visible': False,
+    'xtick.direction': 'in',
+    'ytick.direction': 'in',
+#    'font.family': 'arial',
+#    'mathtext.fontset': 'stixsans',
+    'xtick.major.width': 0.5,
+    'ytick.major.width': 0.5,
+    'font.size': 16,
+    'axes.linewidth': 1.0
+}
 
 class Sequence:
     """Pulse sequence management class for timedomain measurement"""
@@ -244,7 +246,7 @@ class Sequence:
 
         self.flag["compiled"] = True
 
-    def draw(self, port_name_list=None, time_range=None, baseband=True):
+    def draw(self, port_name_list=None, time_range=None, baseband=True, auto_yscale=False):
         """draw waveform saved in the Ports
         Args:
             port_name_list (list): List of the port_name to plot waveform
@@ -268,35 +270,42 @@ class Sequence:
         else:
             plot_time_range = time_range
 
-        plt.figure(figsize=(20,1.5*len(plot_port_list)))
-        for i, port in enumerate(plot_port_list):
-            plt.subplot(len(plot_port_list), 1, i+1)
-            plt.axhline(0, color="black", linestyle="-")
-            for measurement_window in port.measurement_windows:
-                plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
-            if baseband:
-                plot_waveform = np.exp(1j*(2*np.pi*port.if_freq*port.time))*port.waveform
-            else:
-                plot_waveform = port.waveform
-            plt.step(port.time, plot_waveform.real)
-            plt.step(port.time, plot_waveform.imag)
-            plt.fill_between(port.time, plot_waveform.real, step="pre", alpha=0.4)
-            plt.fill_between(port.time, plot_waveform.imag, step="pre", alpha=0.4)
-            for trigger_index, _ in port.trigger_node_list:
-                position = self.trigger_position_list[trigger_index]
-                plt.axvline(position, color="red", linestyle="--")
-                if plot_time_range[0] <= position <= plot_time_range[1]:
-                    plt.text(x=position, y=-1, s=trigger_index, color="red", fontsize=12)
-            plt.text(x=plot_time_range[0], y=-0, s=port.name,fontsize=18)
-            plt.ylim(-1,1)
-            plt.xlim(plot_time_range[0], plot_time_range[1])
-            plt.grid()
-            plt.ylabel("Amplitude")
-            plt.tick_params(labelbottom=False)
-        plt.tight_layout()
-        plt.tick_params(labelbottom=True)
-        plt.xlabel("Time (ns)")
-        plt.show()
+        with plt.rc_context(sequencer_rc_context):
+            plt.figure(figsize=(20,1.5*len(plot_port_list)))
+            for i, port in enumerate(plot_port_list):
+                plt.subplot(len(plot_port_list), 1, i+1)
+                plt.axhline(0, color="black", linestyle="-")
+                for measurement_window in port.measurement_windows:
+                    plt.axvspan(measurement_window[0], measurement_window[1], color="green", alpha=0.3)
+                if baseband:
+                    plot_waveform = np.exp(1j*(2*np.pi*port.if_freq*port.time))*port.waveform
+                else:
+                    plot_waveform = port.waveform
+                plt.step(port.time, plot_waveform.real)
+                plt.step(port.time, plot_waveform.imag)
+                plt.fill_between(port.time, plot_waveform.real, step="pre", alpha=0.4)
+                plt.fill_between(port.time, plot_waveform.imag, step="pre", alpha=0.4)
+                if auto_yscale:
+                    yabs_max = np.max(np.abs(plt.ylim()))
+                    plt.ylim(-yabs_max, yabs_max)
+                    ymin = -yabs_max
+                else:
+                    plt.ylim(-1, 1)
+                    ymin = -1
+                for trigger_index, _ in port.trigger_node_list:
+                    position = self.trigger_position_list[trigger_index]
+                    plt.axvline(position, color="red", linestyle="--")
+                    if plot_time_range[0] <= position <= plot_time_range[1]:
+                        plt.text(x=position, y=ymin, s=trigger_index, color="red", fontsize=12)
+                plt.text(x=plot_time_range[0], y=-0, s=port.name,fontsize=18)
+                plt.xlim(plot_time_range[0], plot_time_range[1])
+                plt.grid()
+                plt.ylabel("Amplitude")
+                plt.tick_params(labelbottom=False)
+            plt.tight_layout()
+            plt.tick_params(labelbottom=True)
+            plt.xlabel("Time (ns)")
+            plt.show()
 
     def get_waveform_information(self):
         """get waveform information for I/O with measurement_tools
