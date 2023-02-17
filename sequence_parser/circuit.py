@@ -302,13 +302,13 @@ class CircuitBase(Sequence):
             qdir = {
                 "daq_length" : qport.waveform.size*qport.DAC_STEP,
                 "measurement_windows" : qport.measurement_windows,
-                "waveform" : qport.waveform.real,
+                "waveform" : qport.waveform,
                 "waveform_updated" : False,
             }
             rdir = {
                 "daq_length" : rport.waveform.size*rport.DAC_STEP,
                 "measurement_windows" : aport.measurement_windows,
-                "waveform" : rport.waveform.real,
+                "waveform" : rport.waveform,
                 "waveform_updated" : False,
             }
             
@@ -323,7 +323,7 @@ class CircuitBase(Sequence):
             cdir = {
                 "daq_length" : cport.waveform.size*cport.DAC_STEP,
                 "measurement_windows" : cport.measurement_windows,
-                "waveform" : cport.waveform.real,
+                "waveform" : cport.waveform,
                 "waveform_updated" : False,
             }
 
@@ -335,7 +335,7 @@ class CircuitBase(Sequence):
             idir = {
                 "daq_length" : iport.waveform.size*iport.DAC_STEP,
                 "measurement_windows" : iport.measurement_windows,
-                "waveform" : iport.waveform.real,
+                "waveform" : iport.waveform,
                 "waveform_updated" : False,
             }
             

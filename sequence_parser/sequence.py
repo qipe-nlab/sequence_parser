@@ -318,7 +318,7 @@ class Sequence:
             waveform_information[port.name] = {
                 "daq_length" : port.waveform.size*port.DAC_STEP,
                 "measurement_windows" : port.measurement_windows,
-                "waveform" : port.waveform.real,
+                "waveform" : port.waveform,
                 "waveform_updated" : False,
             }
             
