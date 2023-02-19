@@ -40,7 +40,7 @@ class Pulse(Instruction):
         support = flag_above & flag_below
         envelope = self.pulse_shape.model_func(relative_time[support])
         if_freq = port.if_freq + self.detuning
-        phase_factor = np.exp(-1j * (2*np.pi * if_freq * time[support] + self.phase))
+        phase_factor = np.exp(1j * (2*np.pi * if_freq * time[support] + self.phase))
         waveform = factor * envelope * phase_factor
         out[support] += waveform
 
