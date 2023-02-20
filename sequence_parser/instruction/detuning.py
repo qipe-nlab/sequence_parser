@@ -25,7 +25,7 @@ class _AddDetuning(Command):
         global start_position
         start_position = port.position
         detuning = self.tmp_params["detuning"]
-        port.phase += 2*np.pi*detuning*start_position
+        port.phase -= 2*np.pi*detuning*start_position
         port.detuning = detuning
 
 class _DelDetuning(Command):
@@ -37,5 +37,5 @@ class _DelDetuning(Command):
         global start_position
         end_position = port.position 
         detuning = self.tmp_params["detuning"]
-        port.phase -= 2*np.pi*detuning*start_position
+        port.phase += 2*np.pi*detuning*start_position
         port.detuning = 0
