@@ -1,12 +1,11 @@
-from setuptools import setup
+from setuptools import setup, find_packages()
 
-if __name__ == "__main__":
-    setup(
-        name="sequence-parser",
-        packages=["sequence_parser"],
-        install_requires=[
-            "numpy",
-            "matplotlib",
-            "networkx",
-        ]
-    )
+setup(
+    name="sequence-parser",
+    packages=find_packages(),
+    install_requires=[
+        "numpy",
+        "matplotlib",
+        "networkx",
+    ]
+)
