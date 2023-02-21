@@ -1,6 +1,0 @@
-
-numpy
-matplotlib
-networkx
-qupy
-cirq
