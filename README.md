@@ -10,6 +10,12 @@ Users also can partially customize the rules about time orders for instructions 
 
 Sequence Parser will streamline experiments by increasing the reusability of pulse sequences.
 
+## Installation
+
+```
+pip install git+https://github.com/qipe-nlab/sequence_parser.git
+```
+
 ## Usage
 
 1. Import Modules
