@@ -576,7 +576,10 @@ class Circuit(CircuitBase):
         for i in target:
             self.measurement(i)
         for i in muxes:
-            self.pump(i)
+            try:
+                self.pump(i)
+            except:
+                pass
         self.rtrigger(target)
 
     def measurement_all(self):

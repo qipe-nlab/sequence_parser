@@ -55,6 +55,8 @@ class GaussianShape(PulseShape):
         waveform = self.amplitude*np.exp(-4*np.log(2)*(time/self.fwhm)**2)
         if self.zero_end:
             edge = self.amplitude*np.exp(-4*np.log(2)*(0.5*self.duration/self.fwhm)**2)
+            if edge == self.amplitude:
+                edge += 1e-8
             waveform = self.amplitude*(waveform - edge)/(self.amplitude - edge)
         return waveform
 

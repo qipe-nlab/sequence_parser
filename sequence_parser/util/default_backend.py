@@ -13,52 +13,76 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
     for node in pt.nodes.values():
         qubit_note = qubit_notes[f"Q{node.node}"]
         arx90 = qubit_note.half_pi_pulse_power
-        brx90 = qubit_note.half_pi_pulse_length_precise["ns"]
-        grx90 = qubit_note.half_pi_pulse_drag_coeff
+        try:
+            brx90 = qubit_note.half_pi_pulse_length_precise["ns"]
+        except:
+            brx90 = qubit_note.half_pi_pulse_length["ns"]
+        try:
+            grx90 = qubit_note.half_pi_pulse_drag_coeff
+        except:
+            grx90 = 0
 
         rx90 = Sequence()
         with rx90.align(node.q, mode="left"):
-            rx90.add(Gaussian(amplitude=arx90, fwhm=brx90, duration=2*brx90, zero_end=True), node.q)
-            rx90.add(Deriviative(Gaussian(amplitude=1j*arx90*grx90, fwhm=brx90, duration=2*brx90, zero_end=True)), node.q)
+            rx90.add(Gaussian(amplitude=arx90, fwhm=brx90, duration=4*brx90, zero_end=True), node.q)
+            rx90.add(Deriviative(Gaussian(amplitude=1j*arx90*grx90, fwhm=brx90, duration=4*brx90, zero_end=True)), node.q)
         gt._add_gate("rx90", node.node, rx90)
 
         rx180 = Sequence()
-        rx180.add(Delay(duration=-brx90), node.q)
-        with rx180.align(node.q, mode="left"):
-            rx180.add(Gaussian(amplitude=2*arx90, fwhm=brx90, duration=4*brx90), node.q)
-            rx180.add(Deriviative(Gaussian(amplitude=2j*arx90*grx90, fwhm=brx90, duration=4*brx90)), node.q)
-        rx180.add(Delay(duration=-brx90), node.q)
+        # rx180.add(Delay(duration=-brx90), node.q)
+        for i in range(2):
+            rx180.call(rx90)
+        # rx180.add(Delay(duration=-brx90), node.q)
         gt._add_gate("rx180", node.node, rx180)
+
 
         if visualize:
             print(f"rx90 : {node.node}")
             rx90.draw()
+            print(f"rx180 : {node.node}")
+            rx180.draw()
 
     for idx, (impa, nodes) in pt.muxes.items():
-        impa_note = impa_notes[f"I{idx}"]
-        pump_amp = impa_note.pump_amplitude
-        pump_freq = impa_note.pump_frequency["GHz"]
-        pump_dur = impa_note.pump_duration["ns"]
-        pump_skew = impa_note.pump_skew["ns"]
+        # impa_note = impa_notes[f"I{idx}"]
+        # pump_amp = impa_note.pump_amplitude
+        # pump_freq = impa_note.pump_frequency["GHz"]
+        # pump_dur = impa_note.pump_duration["ns"]
+        # pump_skew = impa_note.pump_skew["ns"]
 
-        impa.skew = -pump_skew
-        pump = Sequence()
-        pump.add(SetDetuning(pump_freq), impa)
-        pump.add(FlatTop(Gaussian(amplitude=pump_amp, fwhm=10, duration=40, zero_end=True), top_duration=pump_dur), impa)
-        gt._add_gate("pump", idx, pump)
+        # impa.skew = -pump_skew
+        # pump = Sequence()
+        # pump.add(SetDetuning(pump_freq), impa)
+        # pump.add(FlatTop(Gaussian(amplitude=pump_amp, fwhm=10, duration=40, zero_end=True), top_duration=pump_dur), impa)
+        # gt._add_gate("pump", idx, pump)
 
         for node in nodes:
             qubit_note = qubit_notes[f"Q{node.node}"]
-            dmeas = qubit_note.cavity_readout_trigger_delay["ns"]
-            top_dur = qubit_note.single_length["ns"]
-            ac_dur = np.where(np.sum(qubit_note.single_window, axis=0) != 0)[0][-1]*8
+            readout_power = qubit_note.cavity_readout_amplitude
+            try:
+                readout_length = qubit_note.cavity_readout_length
+            except:
+                readout_length = 5000
 
-            node.a = -dmeas
+            skew_ns = qubit_note.cavity_readout_skew["ns"]
+            dmeas = qubit_note.cavity_readout_trigger_delay["ns"]
+            # top_dur = qubit_note.single_length["ns"]
+            # ac_dur = np.where(np.sum(qubit_note.single_window, axis=0) != 0)[0][-1]*8
+            ac_dur = 1920
+
+            # node.a = -dmeas
             meas = Sequence()
             meas.trigger([node.q, node.r, node.a])
-            meas.add(FlatTop(Gaussian(amplitude=1.0, fwhm=10, duration=40, zero_end=True), top_duration=top_dur), node.r)
+            meas.add(Delay(dmeas), node.a) # toku
+            meas.add(Delay(duration=skew_ns), node.r)
+            meas.add(Square(amplitude=readout_power, duration=readout_length), node.r)
             meas.add(Acquire(duration=ac_dur), node.a)
             gt._add_gate("meas", node.node, meas)
+            # gt._add_gate("meas", node.node, meas)
+    
+            if visualize: # toku
+                print(f"meas : {idx}")
+                meas.draw()
+    
 
     for key, edge in pt.edges.items():
         cross_note = cross_notes[f"C({key[0]},{key[1]})"]
