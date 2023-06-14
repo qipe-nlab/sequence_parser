@@ -43,17 +43,6 @@ def default_backend(muxes, edges, qubit_notes, impa_notes, cross_notes, visualiz
             rx180.draw()
 
     for idx, (impa, nodes) in pt.muxes.items():
-        # impa_note = impa_notes[f"I{idx}"]
-        # pump_amp = impa_note.pump_amplitude
-        # pump_freq = impa_note.pump_frequency["GHz"]
-        # pump_dur = impa_note.pump_duration["ns"]
-        # pump_skew = impa_note.pump_skew["ns"]
-
-        # impa.skew = -pump_skew
-        # pump = Sequence()
-        # pump.add(SetDetuning(pump_freq), impa)
-        # pump.add(FlatTop(Gaussian(amplitude=pump_amp, fwhm=10, duration=40, zero_end=True), top_duration=pump_dur), impa)
-        # gt._add_gate("pump", idx, pump)
 
         for node in nodes:
             qubit_note = qubit_notes[f"Q{node.node}"]

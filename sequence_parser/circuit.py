@@ -6,6 +6,7 @@ from .instruction.instruction_parser import compose
 from .instruction.command import VirtualZ, Delay
 from .instruction.acquire import Acquire
 from .instruction.align import _AlignManager
+from .instruction.detuning import _DetuningManager
 from .util.decompose import matrix_to_su2, matrix_to_su4
 from sequence_parser.instruction import acquire
 from .sequence import sequencer_rc_context
